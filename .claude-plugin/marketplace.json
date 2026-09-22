@@ -1,0 +1,13 @@
+{
+  "name": "frost-tools",
+  "owner": {
+    "name": "Frost Design Group"
+  },
+  "plugins": [
+    {
+      "name": "frost-webflow",
+      "source": "./",
+      "description": "Figma to Webflow conversion workflow, with the Webflow MCP and custom-code rules this team has already paid for once."
+    }
+  ]
+}
