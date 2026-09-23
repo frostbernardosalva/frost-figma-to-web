@@ -40,6 +40,10 @@ Mobile     <node-id>    <w> × <h>
 **Breakpoint map:** `<native ≤991/≤767>` or `<custom>`. One map for the whole project — record which
 and do not let a second one appear.
 
+**Class namespace:** `<ns>` — every custom class is `<ns>_component_element`, modifiers are `is-`
+combo classes, utilities are dash-only. Client-First; see the skill's **Class naming** section. The
+convention is fixed, the namespace is this project's alone.
+
 **Annotations live in:** `<spec doc | Figma Dev Mode | duplicate file>`.
 
 **Figma is:** `<read-only | annotatable>`. If read-only, say what the restriction covers — a ban on

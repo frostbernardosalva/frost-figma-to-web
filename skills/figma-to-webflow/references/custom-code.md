@@ -3,6 +3,25 @@
 For behaviour Webflow cannot express: accordions, carousels, scroll-triggered animation, form
 prefill. Each rule below traces to a defect that shipped.
 
+## Standing rule: anything the API cannot write goes in the repo as a paste
+
+**When a Webflow API call refuses something, do not work around it by changing the design
+decision.** Write the thing as a complete, paste-ready file in the project's `custom-code/`
+folder, with a header comment naming exactly where it goes, and tell the developer to paste it.
+
+The API refuses more than it documents. Known so far:
+
+- **Size variables reject CSS expressions.** `create_size_variable` and `update_size_variable` both
+  fail with *"An internal error occurred"* on a `custom_value` such as
+  `clamp(1.5rem, 2.0833vw, 2.5rem)` — despite the field being documented as accepting an arbitrary
+  CSS expression. So fluid type and spacing scales cannot be built as variables.
+- **No write path for page custom code** at all — `update_page_settings` covers SEO, Open Graph,
+  slug and JSON-LD only, and its `draft` flag is silently dropped.
+
+**Prefer page-level custom code over site-wide.** A root font-size rule pasted site-wide rescales
+every other page on that site, including design systems built earlier. Page settings scope it to
+the one page being built. Only go site-wide when the effect is genuinely meant to be global.
+
 ## Keep a source of truth outside the Designer
 
 Snippets pasted into Webflow exist nowhere else unless you mirror them in the project repo. A

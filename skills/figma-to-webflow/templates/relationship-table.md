@@ -45,6 +45,26 @@ even though nothing about it looks like a gap.
 Cover at least: content/element widths, media and image heights, control and hit-target sizes, icon
 boxes, and any max-width.
 
+### Two rows that are mandatory and always get skipped
+
+Nothing in the design *declares* these — they are outcomes of the layout, so there is no value to
+read off and they never make it into the table. Measure them anyway.
+
+| Thing | Desktop | Tablet | Mobile | Sections | Node ids | Verdict |
+|---|---|---|---|---|---|---|
+| Section height — hero | 1025 | 646 | 963 | Hero | | |
+| Section height — asset block | 705 | | | Asset Block | | |
+| Image box — hero photo | | | | Hero | | |
+| Image box — asset block photo | | | | Asset Block | | |
+
+Those desktop numbers are the real ones from the build that got this wrong, kept as the worked
+example. **The asset block was built 562px tall against a designed 705.** With
+`background-size: cover` on a content-sized box, that re-cropped the photograph at every
+breakpoint — cutting one person out of the frame entirely — while all 159 measured values inside
+the section stayed correct.
+
+A blank height cell means unmeasured and blocks the build, exactly like every other cell here.
+
 ## Type roles
 
 One row per **role**, not per class. Two roles whose values coincide at desktop are still two roles;

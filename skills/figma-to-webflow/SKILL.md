@@ -44,6 +44,21 @@ that share a desktop value into a single row. Both shortfalls are now addressed 
 That is one design, and it tests whether the method *finds* the relationships — **not** whether the
 workflow is faster end to end. Nothing has measured that yet. Say so if asked.
 
+### What a visual comparison then found
+
+Two builds of that design were measured at **63/63, 100%**, twice. A screenshot comparison against
+the source frames afterwards found **eight defects neither audit could see** — every photograph
+mis-cropped at every breakpoint, three run-together words, a form whose fields sat at 43% of their
+container, and a line-break system that was inert in one build and suppressed at desktop in the
+other.
+
+**Seven of the eight were assertable as numbers.** They were missed not because numbers are the
+wrong instrument, but because the workflow never asked for those values — section height was not in
+the relationship table at all. Only one finding genuinely required an eye.
+
+That is where the Stage 3 measurement rows and the seven-row Stage 5 gate come from. They are not
+ceremony; each row maps to a defect that reached a published page.
+
 ## Stage 0 — Audit the design file
 
 **First: verify the frames.** Resolve every frame id and report each one's `name` and `width`.
@@ -101,6 +116,9 @@ project owner's call to make, not yours.
   available and the most expensive to defer.
 - **Behaviour for anything that scrolls, animates or has states** — it determines the element tree.
 - **Font licensing**, before any type token is built on a face that cannot ship.
+- **The project's namespace.** The convention itself is fixed — see **Class naming** below — but the
+  namespace is per project, and every class minted afterwards carries it. Same logic as the
+  breakpoint map: cheapest decision available, most expensive to defer.
 
 ## Stage 3 — Responsive relationship table
 
@@ -118,6 +136,15 @@ breakpoint, plus the sections it was measured in. Three rules, all learned by br
 - **One row per relationship.** Two relationships that share a value at one breakpoint and differ at
   another are two rows. A cell needing a qualifier — "24 for cards, 16 for the footer" — is two
   relationships wearing one name, which is the original defect in miniature.
+- **Measure what the design does not declare.** Two rows get skipped because nothing in the file
+  *states* them — they are outcomes of the layout, not declarations:
+  - **Section height**, every section, all three breakpoints.
+  - **Image box** dimensions for every photographic element — the box, not the asset.
+
+  Omitting these shipped the single largest defect this workflow has produced. Sections were built
+  content-height (562px where the design was 705px) with `background-size: cover`, which re-cropped
+  every photograph at every breakpoint — while all 159 measured values inside them stayed correct.
+  A value audit cannot see a number that was never taken.
 
 Then: **new token when values diverge across breakpoints; reuse with an override when they agree.**
 Rows whose three values differ become semantic tokens carrying modes. Rows that agree become
@@ -139,13 +166,138 @@ primitives.
 Read `references/webflow-mcp.md` before the first write. It is the difference between a clean build
 and a day spent on silently dropped styles.
 
+## Class naming — Client-First
+
+**Every class follows Client-First.** Three types, and the type is readable from the name alone:
+
+| Type | Syntax | Example |
+|---|---|---|
+| **Custom** — a component, element or grouping | underscores, keywords **general → specific** | `gb_testimonial-slider_headshot` |
+| **Utility** — global, one job, reusable anywhere | dashes only, **never** an underscore | `text-size-large` · `margin-large` |
+| **Modifier / variant** | a **combo class** prefixed `is-` | `.gb_tab.is-active` |
+
+**The underscore is not decoration — Webflow's Designer turns it into a real folder.**
+`gb_hero_title` files itself under `gb ▸ hero ▸ title`. This is why the project namespace and the
+style-panel organisation are the same decision, and why the namespace belongs in Stage 2.
+
+Where a project requires that an existing design system not be touched, the namespace *is* the
+protection: a first segment nothing else uses cannot collide.
+
+**Why not BEM.** Webflow publishes a BEM guide, so it is not wrong. But `block--modifier` as a
+standalone global class fights Webflow's own modifier mechanism, and `references/webflow-mcp.md`
+records the trap that follows: **properties land on the combo, not the global.** `is-` makes that
+relationship visible in the name; `--` hides it.
+
+**One hazard to check, not assume.** Reserved class names are silently dropped — `.label` is one
+(see `references/webflow-mcp.md`). Short utility names sit closer to that hazard than namespaced
+custom classes do, so **query a utility back after creating it**.
+
 ## Stage 5 — Build section by section, gated
 
-**Gate: nothing is recorded as matching until all three breakpoints are checked.**
+**Gate: a section is not done until every row passes. No next section until it does.**
 
-Build one section, verify it at all three, fix, then move to the next. Not build-everything-then-
-audit-once: a fix applied to a build nobody is watching any more is how a fidelity pass ends at
-"19 fixed, 5 still wrong" instead of converging.
+| # | Check | Catches |
+|---|---|---|
+| 1 | Values at the three design widths | the relationship table, verified |
+| 2 | Range sample at ~600, ~800, and the low end of `tiny` | a value right at 980 and catastrophic at 520 |
+| 3 | No horizontal scroll at any width tested | container collapse |
+| 4 | **Text content diffed against the Figma text** | run-together words, dropped or altered copy |
+| 5 | **Every asset resolves and renders** | placeholder boxes, blank squares |
+| 6 | **Break points match the reference at each width** — which word each line ends on, not how many breaks exist | breaks that never fire, fire everywhere, or land on the wrong word |
+| 7 | **Screenshot against the Figma node, 1:1, per element** | crop, overlap, gradient — the residue nothing numeric catches |
+
+**Row 1 includes alignment, which no table row states.** Elements the design sets flush must come
+out flush. This one needs no reference to check: compare siblings against **each other**. A heading
+block starting 78px right of its own body copy is wrong whatever the design says, and that shipped —
+at tablet, in a build that passed every measured value.
+
+Build one section, run all seven, fix, then move to the next. Not build-everything-then-audit-once:
+a fix applied to a build nobody is watching any more is how a fidelity pass ends at "19 fixed, 5
+still wrong" instead of converging.
+
+`references/verification.md` has the script for rows 1–6 and the false positives to expect from it.
+
+### Row 7 is the one that gets faked
+
+It has already been run and passed a build that was visibly wrong. Two rules, both learned that way:
+
+- **1:1, element by element.** At section scale and ~60% zoom, a 191px form field and a 442px form
+  field both read as "a form, in the right place". They were not the same. Compare the element
+  against its Figma node at full size, or the row is decorative.
+- **Re-measure after swapping a styled `div` for a real control.** `<input>` and `<select>` do not
+  inherit the width a `div` took by default. That is precisely how the 191px field shipped.
+
+### Check the ranges, not just the three widths
+
+**The three design widths are three points. The browser is continuous.** A breakpoint covers a
+*range* — Webflow's `medium` spans 480–991 — and a value that is correct at the design's width can
+be nonsense everywhere else in that range.
+
+This has already shipped a defect. A tablet gutter measured at 274px — correct at the 980px design
+frame — was built as fixed `padding-x`. At 980 it verified perfectly. At 600 it left 52px for
+content; at 520 the container collapsed to **zero width** and the page scrolled sideways. The
+measurement was right; the *rule* was wrong.
+
+So, after the three design widths pass, **sample the middle of every range**: roughly 600 and 800
+for `medium`, and the low end of `tiny`. Look for a container narrower than intended, text crushed
+or wrapping far more than the design, a section far taller than the design, and any horizontal
+scroll at all.
+
+The underlying habit: **a fixed gutter is almost always the wrong translation of a centred column.**
+The design says "432px of content centred in a 980px frame". Written as `padding: 274px` that is
+true at exactly one width. Written as `max-width: 432px` plus a small safe gutter, it is true
+everywhere — and still produces 274px gutters at 980. Prefer the rule that states the intent over
+the number that was measured.
+
+**The same error in its other costume: a fixed-frame photo does not become `cover` on a
+content-sized box.** In the design the photo is a fixed frame with a known crop. Built as a
+background on a box whose height is whatever the copy happens to need, `cover` re-crops it — and
+keeps re-cropping it as the copy reflows. Set the height, or set `aspect-ratio` from the export.
+Every value inside such a section still measures correct, which is exactly why this survives a
+value audit.
+
+### Text line-break fidelity
+
+**Line breaks shown in the Figma frame are exact, not illustrative.** Match them at each breakpoint
+independently. Natural word-wrap is not sufficient on its own; it must be *verified* to produce the
+same break points as the reference at each of the three breakpoints — not just approximately
+similar.
+
+**Method 1 — `max-width`, try this first.** Adjust the container's `max-width` until natural
+wrapping produces the same break points as the frame at that breakpoint's specific width. Verify
+against the export. Do not assume a plausible-looking `max-width` is correct without checking the
+rendered break points.
+
+**Method 2 — forced break, when `max-width` alone cannot match it.** Wrap the text from the break
+point onward in a `<span>` set to `display: block`. That forces the exact break regardless of
+container width:
+
+```html
+<p>
+  The Emerging Bull Award is presented to
+  <span class="ns_line">Asia-Pacific businesses that demonstrate</span>
+  <span class="ns_line">rapid growth, strong business fundamentals,</span>
+  and potential for future expansion.
+</p>
+```
+
+**Per-breakpoint re-verification is non-negotiable.** A forced break defined at one breakpoint does
+not carry to the others. A `display: block` span that is correct at 1920 will very likely be wrong
+at 980 and 430, because the design re-flows differently at each width. Re-check against the
+reference at every breakpoint — never assume a break survives a width change.
+
+Three things this project already paid for:
+
+- **Wrap the text; never toggle an empty marker.** An empty `<span>` switched between `block` and
+  `none` leaves **no whitespace** when hidden, which is how `craftingend-to-end` and
+  `EmergingBull Award` shipped. Method 2 avoids this because the span *contains* the text. If an
+  empty marker is genuinely unavoidable, the space goes **before** it —
+  `crafting <span class="ns_brk"></span>end-to-end` reads correctly in both states.
+- **Block spans cannot overlap.** Where two breakpoints break at different words mid-sentence, one
+  set of block spans cannot express both. Use Method 1 for the breakpoint that conflicts, and say
+  which approach each breakpoint uses. This is a real limit, not something to improvise past.
+- **Never build a responsive break on `<br>`.** Webflow strips its classes, so every `<br>` fires at
+  every width at once. Spans keep their classes.
 
 **Record every deliberate deviation as it is made**, in the project's `CLAUDE.md`. Undocumented
 changes read as defects later, even when the reasoning was sound. This log is a required
@@ -174,5 +326,6 @@ asking.
 ## References
 
 - `references/webflow-mcp.md` — **read before any Webflow write.**
+- `references/verification.md` — **read before running the Stage 5 gate.**
 - `references/custom-code.md` — **read before writing or pasting any snippet.**
 - `templates/relationship-table.md` · `templates/annotation-spec.md` · `templates/CLAUDE.md`
