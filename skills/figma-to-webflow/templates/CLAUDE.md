@@ -58,8 +58,29 @@ on annotation. Record the intent, not just the rule.
 
 Rules that apply everywhere and are worth restating per project because they are easy to violate:
 - Components reference the **semantic** layer, never primitives.
-- Responsive values live in **variable modes**, not breakpoint overrides.
+- Responsive values live in **variable modes**, not breakpoint overrides. Gaps included — write the
+  legacy `grid-row-gap` / `grid-column-gap`, which accept variables where `row-gap` does not.
 - Primitive spacing is never responsive; semantic spacing usually is.
+- **Every measurement is `rem`** (÷ 16 from the design's px). `letter-spacing` is **`em`**.
+  `background-size` is the one px exception — an image's intrinsic size is a pixel fact.
+- **Never write `line-height: normal`.** Figma's `leading-[normal]` and the CSS keyword are
+  different numbers on the same face. Record the measured ratio as a token.
+
+### Container ladder
+
+```
+section      padding-block: <responsive>   padding-inline: <flat, = the mobile gutter>
+  container  max-width: <content width per breakpoint>   margin-inline: auto   — no padding
+```
+
+| | <bp1> | <bp2> | <bp3> | <bp4> |
+|---|---|---|---|---|
+| Section `padding-inline` | | | | |
+| Container `max-width` | | | | **none** — `width: 100%` |
+| Resulting content width | | | | |
+
+Every container on the page returns the **same** number at each width — the footer included. Check
+them together, not one at a time.
 
 ## Deviation log
 

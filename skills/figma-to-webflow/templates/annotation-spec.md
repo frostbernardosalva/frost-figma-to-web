@@ -49,7 +49,41 @@ Guidance: a value recurring in several sections is almost always a decision. A l
 is usually drift. Ask rather than standardise — a standardisation reversed later costs more than the
 question did.
 
-## 5. Unresolved
+## 5. Page landmarks
+
+The header and footer are **body-level siblings of the sections**, never inside one. Decide these
+before building, because both were decided ad hoc on the last two projects and both had to be
+retrofitted.
+
+| Question | Answer | Source |
+|---|---|---|
+| Header scroll behaviour — scrolls away, sticky, or hides on scroll down? | | |
+| If sticky: what does the **scrolled** state look like? | | |
+| Does the header overlay the first section, or sit above it? | | |
+| Footer: part of the last section's background, or its own? | | |
+
+**A sticky header almost always needs a scrolled state, and the design almost never has one.**
+Check the header's text colour against *every* section it will pass over. On the last project the
+nav links were `#0c0c30` and four of six sections were `#000001` — a transparent sticky header
+would have been invisible over most of the page. If the file defines no scrolled state, that is a
+**blocking question for Stage 2**, not something to invent at build time.
+
+## 6. Asset inventory
+
+Fill this before Stage 0.5. A missing row is a missing export, and it is much cheaper to find here
+than at section five.
+
+| Section | Role | Breakpoints needing their own crop | Intrinsic w × h | Format | Alt text / decorative |
+|---|---|---|---|---|---|
+| | | | | | |
+
+- One row per image **per breakpoint that crops differently**. The last project reached section 5
+  before noticing one breakpoint's export had never been taken.
+- `background-size` needs the **intrinsic width**, so record it here rather than re-deriving it.
+- Decide alt text now: a descriptive label for content images, explicitly **decorative** for
+  chevrons, rules and scroll cues.
+
+## 7. Unresolved
 
 Anything asked and not yet answered. Rows here block the stages they feed.
 

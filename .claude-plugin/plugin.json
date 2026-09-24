@@ -1,7 +1,7 @@
 {
   "name": "frost-webflow",
-  "description": "Frost's Figma to Webflow conversion workflow: audit, annotate, derive a responsive token system, then build section by section behind a three-breakpoint gate.",
-  "version": "0.1.0",
+  "description": "Frost's Figma to Webflow conversion workflow: audit, annotate, prepare assets, derive a responsive token system, then build section by section behind a seven-row verification gate.",
+  "version": "0.2.0",
   "author": {
     "name": "Frost Design Group"
   }

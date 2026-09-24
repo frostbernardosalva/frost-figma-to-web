@@ -109,3 +109,39 @@ before writing it down as a defect.
 
 Write pass/fail per row per section as you go, not at the end. A row that was never run is not a
 pass, and the record should make that visible rather than silently absorb it.
+
+## Two more false positives
+
+### `Range.getClientRects().length` is not a line count
+
+It returns one rect per child node, so a paragraph with three `<br>`s reports 5 "lines" and a
+two-`<p>` block reports 4. Use `height / lineHeight`, or the overlap-grouping probe in SKILL.md.
+
+### Grouping characters by `top` splits a line at every weight change
+
+Bold and regular glyphs on the same line have different rect tops. A per-character probe that keys
+on `top` will report an orphaned word that does not exist. Group by **vertical overlap** — a
+character belongs to the running line if its midpoint falls inside that line's band.
+
+## Do not compensate for the iframe scrollbar
+
+Padding the iframe width so `clientWidth` equals the design width pushes the **media** width past
+the breakpoint — media queries match the viewport *including* the scrollbar. A 980 test silently
+rendered the desktop layout and reported desktop values as if they were tablet. Hide the scrollbar
+instead, so measured width and media width are the same number:
+
+```js
+html { scrollbar-width: none }
+html::-webkit-scrollbar { display: none }
+```
+
+## Assert the URL, not the element
+
+`loading="lazy"` makes every `<img>` report `complete: false` with an empty `currentSrc`. Fetch the
+URL and check for **HTTP 200**. The same check should sweep for legacy formats after an asset
+migration — `document.images` and every `url(...)` in `document.styleSheets`.
+
+## Re-run the whole gate after every fix
+
+Not the row that failed — the whole gate, on every section. See the section-3 regression in SKILL.md
+Stage 5: a fix broke the section it was fixing, and only the end-of-build audit caught it.

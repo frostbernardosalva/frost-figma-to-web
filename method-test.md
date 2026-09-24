@@ -1,6 +1,6 @@
 # Does the relationship-table method actually find responsive relationships?
 
-**Blind test · one design · Figma file `PCg5IZPXDyaulA1FWK28fM`**
+**Blind test · one design · Figma file `<design-A>`**
 
 The `figma-to-webflow` skill claims that building a responsive relationship table from all three
 breakpoint frames, before any token exists, surfaces the relationships a desktop-first pass misses.

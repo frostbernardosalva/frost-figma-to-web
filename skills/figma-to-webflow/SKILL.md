@@ -1,6 +1,6 @@
 ---
 name: figma-to-webflow
-description: Convert a Figma design into a Webflow build — audit the design file, record what it leaves unspecified, derive a responsive token system from all three breakpoint frames, then build section by section behind a three-breakpoint verification gate. Use when converting a Figma design to Webflow, building a Webflow design system or variable set from a design file, auditing a Webflow build against its Figma source, or writing custom code for behaviour Webflow cannot express.
+description: Convert a Figma design into a Webflow build — audit the design file, record what it leaves unspecified, prepare assets, derive a responsive token system from every breakpoint frame, then build section by section behind a seven-row verification gate. Use when converting a Figma design to Webflow, building a Webflow design system or variable set from a design file, auditing a Webflow build against its Figma source, or writing custom code for behaviour Webflow cannot express.
 ---
 
 # Figma → Webflow
@@ -29,35 +29,64 @@ It had two causes, and the first is the one people miss:
 **Neither cause is fixed by annotating, renaming or tidying the Figma file.** The design stated
 those values correctly. Do not reach for file cleanup to solve this.
 
-## Status: tested once
+## Status: two projects, one claim proven
 
-Derived from **one project**, and measured once. The platform facts in `references/` describe
-Webflow and the browser and are safe to rely on.
+Derived from **two projects** and measured properly once. The platform facts in `references/`
+describe Webflow and the browser and are safe to rely on. Everything else below is the evidence,
+stated plainly, including what it does not cover.
 
-The method was tested by giving a reader nothing but a Figma file key, three node ids and the
-relationship-table structure, then scoring its output against nine responsive relationships that a
-hand pass had originally found only *after* the build was already wrong. **It re-derived seven of
-the nine**, correctly separating two curves that agree at desktop and diverge below — the
-conflation that had caused the original defect. It missed one element width, and merged three gaps
-that share a desktop value into a single row. Both shortfalls are now addressed in the template.
+### What is proven
 
-That is one design, and it tests whether the method *finds* the relationships — **not** whether the
-workflow is faster end to end. Nothing has measured that yet. Say so if asked.
+The Stage 3 method was tested by giving a reader nothing but a Figma file key, three node ids and
+the relationship-table structure, then scoring its output against nine responsive relationships that
+a hand pass had originally found only *after* the build was already wrong. Pre-registered, blinded,
+with the scorer separate from the reader.
 
-### What a visual comparison then found
+**It re-derived seven of the nine**, correctly separating two curves that agree at desktop and
+diverge below — the conflation that had caused the original defect. It missed one element width and
+merged three gaps that share a desktop value; both shortfalls are now in the template. It also
+re-derived two values the original hand audit had got wrong.
 
-Two builds of that design were measured at **63/63, 100%**, twice. A screenshot comparison against
-the source frames afterwards found **eight defects neither audit could see** — every photograph
-mis-cropped at every breakpoint, three run-together words, a form whose fields sat at 43% of their
-container, and a line-break system that was inert in one build and suppressed at desktop in the
-other.
+**Stage 3 finds the relationships.** That is the one claim with real evidence behind it.
+
+### What the first project established
+
+Two builds of that design measured **63/63, 100%**, twice. A screenshot comparison against the
+source frames then found **eight defects neither audit could see** — every photograph mis-cropped at
+every breakpoint, three run-together words, a form whose fields sat at 43% of their container, and a
+line-break system inert in one build and suppressed at desktop in the other.
 
 **Seven of the eight were assertable as numbers.** They were missed not because numbers are the
-wrong instrument, but because the workflow never asked for those values — section height was not in
-the relationship table at all. Only one finding genuinely required an eye.
+wrong instrument but because the workflow never asked for those values — section height was not in
+the relationship table at all. That is where the Stage 3 measurement rows and the seven-row Stage 5
+gate come from.
 
-That is where the Stage 3 measurement rows and the seven-row Stage 5 gate come from. They are not
-ceremony; each row maps to a defect that reached a published page.
+### What the second project established — and this is the important part
+
+A six-section landing page, built behind the seven-row gate. The gate **caught seven defects**,
+three of which no measurement could have found: modifier classes named after the *previous* client's
+brands, two words running together in `textContent` while rendering correctly, and a section broken
+by its own fix after it had already passed.
+
+Then a review of the finished page found **eight further classes of defect the gate passed**:
+container and padding structure, backgrounds built as positioned children, units, asset format,
+image metadata, the mobile container rule, and two line breaks that were inverted between desktop
+and mobile. A later pass found a ninth — the header and footer buried inside content sections.
+
+**So: the gate is reliable at what it inspects. Choosing what to inspect is still the weak half**,
+and on this project that scope came from a human reviewer, not from the method. Read the gate as a
+floor, not a ceiling, and expect the first review of any new page to find a class of thing the rows
+do not cover. Add it to Stage 3, not to the gate.
+
+### What is still unmeasured
+
+- **The direct-conversion control has never been run.** Nothing here shows the workflow beats a
+  careful conversion *without* it. The evidence shows a seven-row gate beats a three-row gate, which
+  is a much smaller claim.
+- **Speed.** The workflow deliberately front-loads measurement to remove rework. That trade has
+  never been timed on a complete project. Say so if asked.
+- **Whether it survives a cold read.** Both projects were built by the same reader who wrote these
+  rules. Nobody has yet run this file who did not also write it.
 
 ## Stage 0 — Audit the design file
 
@@ -83,12 +112,57 @@ When correcting a contrast value, **compute it** — composite the alpha against
 apply the WCAG 2.2 relative-luminance formula. Never estimate. A single alpha token cannot serve
 both light and dark grounds.
 
+## Stage 0.5 — Prepare every asset before building
+
+**All of it happens before the first element is created.** Building first and collecting images as
+you go is how a page ends up half-converted, with one section still pointing at a stale export.
+
+1. **Export** every image from Figma at each breakpoint that needs its own crop. Check the set is
+   complete against the section list — the last build reached section 5 before noticing the 1920
+   export had never been taken, and the 1440 image had been stretched to cover it.
+2. **Rename** to a descriptive, sortable scheme: `<ns>-<section>-<role>-<breakpoint>` —
+   `fr-s1-photo-xxl.avif`, `fr-s4-bg-md.avif`. The breakpoint suffix is what makes a missing export
+   visible at a glance.
+3. **Convert rasters to AVIF.** Vectors stay SVG. Quality ~70 for photographs, ~85 for flat graphics
+   with text or thin strokes. On the last build 12.6 MiB of PNG became **636 KiB** — 4.9%.
+   Local encoders that work: `ffmpeg` (`libaom-av1`), or Python Pillow ≥ 11.3, which has AVIF built
+   in — `Image.open(src).save(dst, quality=70)`.
+4. **Commit them to the repo** next to the PNG exports. The PNGs stay as the source of truth; the
+   AVIFs are what ship.
+5. **Record an asset map** — filename, intrinsic width × height, asset id, and which breakpoint uses
+   it. `background-size` needs the intrinsic width, and you will need it again at Stage 5.
+
+Webflow accepts AVIF natively: `create_asset` on a `.avif` returns `contentType: "image/avif"`. No
+conversion step on the platform side is needed.
+
+**Replacing assets on a build that already shipped:** upload the new ones, rebind every reference,
+verify **zero** legacy references remain, and only then delete the old ones. The check is one line:
+
+```js
+[...document.images].filter(i => /\.(png|jpe?g)(\?|$)/i.test(i.currentSrc)).length === 0
+// and the same over document.styleSheets for url(...) in CSS backgrounds
+```
+
+Deleting first leaves a section with a dead URL and no error anywhere.
+
+## Image metadata — every image, at both levels
+
+- **Content images get descriptive alt text** — what the image *shows*, not what it is called.
+  `"Great Place To Work certified badge for Frost, March 2024 to March 2025"`, not `"gptw"`.
+- **Decorative images are marked decorative** — explicitly empty alt. Chevrons, rules, scroll cues,
+  arrows. Empty because the decision was made, not because nobody set it.
+- Set it on the **asset** (so future placements inherit it) and on the **element**.
+
+**`alt` is a setting, not an attribute.** `data_element_tool > set_attributes` with `name: "alt"`
+fails with `An internal error occurred` — an opaque message for a real constraint. Use
+`data_element_settings_tool > set_settings` with `key: "altText"`.
+
 ## Stage 1 — Annotate what the audit found unspecified
 
 Order matters: the audit runs first and hands over the list. Annotating before auditing is guessing
 at what needs saying.
 
-Use `templates/annotation-spec.md`. Four types, all of them things the design file cannot supply:
+Use `templates/annotation-spec.md`. Six types, all of them things the design file cannot supply:
 
 | Type | Records |
 |---|---|
@@ -96,6 +170,8 @@ Use `templates/annotation-spec.md`. Four types, all of them things the design fi
 | **States** | Hover, focus, active, disabled, loading, error, empty — commonly absent from a design file entirely |
 | **Component identity** | Which repeated elements are one component and which differences are variants. Repetition alone does not reveal it |
 | **Deliberate vs drift** | Whether an off-pattern value is intentional. The highest-value type: a value appearing at 14px in five sections is a decision, while a lone off-grid value is drift, and nothing in the file distinguishes them |
+| **Page landmarks** | Header and footer placement and scroll behaviour. A sticky header needs a **scrolled state**, and the file almost never has one — check the header's text colour against every section it passes over. Blocking at Stage 2, not inventable at build time |
+| **Asset inventory** | One row per image per breakpoint that crops differently, with intrinsic width and its alt text or decorative mark. Feeds Stage 0.5; a missing row is a missing export |
 
 **Default to a spec document, not the design file.** Annotations in Figma are unreviewable and
 undiffable, and Figma metadata has already proven unreliable in practice. If the team decides
@@ -166,6 +242,114 @@ primitives.
 Read `references/webflow-mcp.md` before the first write. It is the difference between a clean build
 and a day spent on silently dropped styles.
 
+## Layout contract — every section, no exceptions
+
+Four rules. They are not style preferences; each one is a defect that shipped and was sent back.
+
+### 1 · The section holds the padding. The container holds the max-width.
+
+```
+section      padding-block: <responsive>   padding-inline: <responsive>
+  container  max-width: <token>   margin-inline: auto     ← no padding
+    content
+```
+
+Nothing else. A container that also carries padding double-insets the moment anyone adds padding to
+the section, and the two rules drift apart. **On the last build the hero used a second container
+ladder** — `max-width: 1440/1024` with `padding-inline: 170/88`, against every other section's
+`1148/896` with `24` — and produced the same content width by a different route. It looked right and
+was unmaintainable. One ladder, or the drift is only a matter of time.
+
+**Verify by measuring every container at once.** All of them must return the same number:
+
+```js
+['.x_case_inner','.x_hero_inner','.x_clients_inner', …]
+  .map(s => document.querySelector(s).getBoundingClientRect().width)
+// 1100,1100,1100,1100,1100,1100   ← one ladder
+// 1100,1020,1100,1100,1100,1100   ← two ladders, and you would never see it by eye
+```
+
+### 2 · No `max-width` on the container at mobile
+
+At the smallest breakpoint the container is `width: 100%` and `max-width: none`. The viewport is
+already the constraint; a max-width there only invents a second one.
+
+### 3 · Section padding is flat, max-width does the work
+
+The gutters a design *appears* to have at desktop — 410 at 1920, 296 at 1440 — are not authored
+insets. They are what is left after centring a fixed content width. The only authored gutter is the
+mobile one.
+
+So: **section `padding-inline` = the mobile gutter, flat at every breakpoint**; container
+`max-width` = the design's content width per breakpoint. Check it lands:
+
+| | viewport | − 2 × padding | max-width | content |
+|---|---|---|---|---|
+| 1920 | 1920 | 1840 | 1100 | **1100** ✓ |
+| 1440 | 1440 | 1360 | 848 | **848** ✓ |
+| 980 | 980 | 900 | 640 | **640** ✓ |
+| 480 | 480 | **400** | none | **400** ✓ |
+
+Every design width exact, and nothing collapses in between. Writing the *apparent* gutter (170 at
+980) as section padding instead produces 428px of content at 768 and a 260px jump at the breakpoint.
+
+**A full-bleed child inside a padded section** — a nav band, a rule that must touch both edges —
+needs `width: calc(100% + 2 × padding)` **and** the matching negative margins. The negative margins
+alone shift it; they do not widen it.
+
+### 4 · Backgrounds go on the section, never on a positioned child
+
+```css
+background-image: url(<asset>);
+background-size: <the image's intrinsic width>px;   /* px — not rem */
+background-repeat: no-repeat;
+background-position: center center;
+```
+
+No absolutely positioned `<div>` or `<img>` behind the content. The section carries the image.
+
+- **`background-size` is the image's real width in px**, per breakpoint, and is the one measurement
+  that stays in px — an intrinsic pixel fact, not a layout measurement.
+- **The section still needs its explicit height.** Moving the image to the background does not
+  remove the mandatory Stage 3 height row; it is still what stops the crop defect.
+- **An absolutely positioned sibling is offset from the *border* box**, so section padding does not
+  move it. Do not "compensate" for the padding — on the last build that pushed a floating badge
+  8px outside the section, where `overflow: hidden` clipped it.
+
+### 5 · The header and footer are page landmarks, not section content
+
+They are **body-level siblings of the sections** — `<header>` first, `<footer>` last — never inside
+one. A header placed inside the first section has to fight that section's padding to reach the page
+edges; on the last build that cost a `width: calc(100% + 2 × padding)` plus matching negative
+margins, a hack that existed **only** because of where the element sat. At body level `left: 0;
+right: 0` is the whole rule.
+
+The footer borrows three things from the section it sits in, and needs all three back when it moves
+out: its **own container** (max-width + `margin-inline: auto`, none at mobile), its **own
+`padding-inline`**, and its **own `background-color`**. Miss the background and the page shows
+through.
+
+Two knock-on effects to handle in the same pass:
+
+- **A fixed header is paid for by the first section**, with `padding-top` = a `size/nav-height`
+  token. The page total must not change.
+- **The section the footer left sheds the footer block from its height token** — gap + footer
+  height. Anything absolutely positioned against that section and anchored to its *bottom* moves
+  with the footer.
+
+## Units — rem everywhere, em for letter-spacing
+
+Every measurement is **rem** (÷16 from the design's px). `letter-spacing` is **em**, so it tracks the
+font size instead of fighting it. `background-size` is the only px exception.
+
+Converting an existing build: set each token's **base** value first, then re-read with
+`include_all_modes`. Modes that resolve to the base inherit the new unit automatically; only modes
+holding a genuine override still read `px` and need setting. On the last build that was 59 base
+writes and 71 mode writes instead of 240.
+
+**A correct rem conversion changes nothing.** At a 16px root the numbers are identical — every
+section height, every content width, the page total. If the page moves, the conversion is wrong.
+
 ## Class naming — Client-First
 
 **Every class follows Client-First.** Three types, and the type is readable from the name alone:
@@ -202,9 +386,16 @@ custom classes do, so **query a utility back after creating it**.
 | 2 | Range sample at ~600, ~800, and the low end of `tiny` | a value right at 980 and catastrophic at 520 |
 | 3 | No horizontal scroll at any width tested | container collapse |
 | 4 | **Text content diffed against the Figma text** | run-together words, dropped or altered copy |
-| 5 | **Every asset resolves and renders** | placeholder boxes, blank squares |
+| 5 | **Every asset resolves, renders, and carries alt text** | placeholder boxes, blank squares, images with no metadata |
 | 6 | **Break points match the reference at each width** — which word each line ends on, not how many breaks exist | breaks that never fire, fire everywhere, or land on the wrong word |
 | 7 | **Screenshot against the Figma node, 1:1, per element** | crop, overlap, gradient — the residue nothing numeric catches |
+
+**Re-run the gate after every fix, not just after the build.** A section can pass its gate and then
+be broken by its own fix. On the last build, row 7 caught the client-logo modifiers being named
+after the *previous* project's clients; the rename that followed stranded their crop rules on the
+old class names, three of five logos collapsed to zero width, and the section lost a whole row —
+592px became 480. Nothing re-measured, and only the end-of-build full audit found it. The fix is the
+most dangerous edit in the process, because it arrives after the checking has stopped.
 
 **Row 1 includes alignment, which no table row states.** Elements the design sets flush must come
 out flush. This one needs no reference to check: compare siblings against **each other**. A heading
@@ -257,6 +448,68 @@ Every value inside such a section still measures correct, which is exactly why t
 value audit.
 
 ### Text line-break fidelity
+
+### Reading the break before fixing it
+
+The failure is almost never the fixing. It is asserting a **line count** and calling it verified.
+On the last build, section 1's gate entry read *"no hard breaks at 1920/1440/980 — those wrap
+naturally"*, and the breaks shipped **inverted** between desktop and mobile. Two lines at both
+widths, both wrong, and the count said pass.
+
+**1 · Get the design's break, in this order of reliability.**
+
+- `get_design_context` on the text node. An authored break is **structural** — separate `<p>`
+  elements inside one text block, or an explicit `<br aria-hidden />` inside a span run.
+- If the text returns as one unbroken string, the break is a **natural wrap** and the file does not
+  say where it lands. Then `get_metadata` gives the node's box: **width**, and
+  `height ÷ (fontSize × line-height)` = the line count.
+- `get_screenshot` of that node and **read the words off the render**. For a natural wrap this is
+  the only source that gives the actual words per line. This is the step that gets skipped.
+
+A frame's `get_metadata` gives every text box on that frame in one call — box width and height for
+each — so **four calls produce the whole break table**. Do that once at Stage 3 rather than
+per-section at Stage 5.
+
+**2 · Decide the method with a measurement, not a guess.** Measure the string up to the required
+break in the real font, and compare it with the design's box:
+
+```js
+const m = document.createElement('span');
+m.style.cssText = 'position:fixed;left:-9999px;white-space:nowrap;visibility:hidden';
+m.style.font = "400 48px Sailec"; m.style.letterSpacing = '-0.02em';
+m.textContent = 'Frost has worked with';
+document.body.appendChild(m); m.getBoundingClientRect().width;   // 485.4 against a 478 box
+```
+
+Fits → **Method 1**. Does not fit → widen past the design (a logged deviation) or **Method 2**.
+
+**3 · Allow for the metric gap.** Figma and the browser disagree about the same font. On this
+project Sailec renders **~1.6% wider** in the browser (a footer line measured 530.6 against a design
+522), and Figma's `leading-[normal]` is **1.25** where the CSS keyword gives **1.45**. A string that
+fits at 478 in Figma may not fit at 478 in a browser — that exact case needed `max-width: 486`.
+Method 1 needs a tolerance; anything past a few px is a deviation to log, not to absorb silently.
+
+**4 · Verify with a probe that reports words, not counts.**
+
+```js
+// group characters into lines by VERTICAL OVERLAP, never by top
+const chars = [];                      // {t, top, bot, mid} per character, via Range rects
+const lines = []; let cur = null;
+for (const c of chars) {
+  if (cur && c.mid >= cur.top && c.mid <= cur.bot) {
+    cur.s += c.t; cur.top = Math.min(cur.top, c.top); cur.bot = Math.max(cur.bot, c.bot);
+  } else { cur = {top: c.top, bot: c.bot, s: c.t}; lines.push(cur); }
+}
+// → ["Frost has worked with", "industry titans."]
+```
+
+**Grouping by `top` is a false positive generator.** Bold and regular glyphs on the same line have
+different rect tops, so a weight change mid-sentence splits one line into two. That probe reported
+an orphaned `"with"` that did not exist, and sent the diagnosis down the wrong path for an hour.
+Overlap grouping is what makes the probe trustworthy.
+
+Then look at it. A break can be correct and still sit 1px from re-wrapping.
+
 
 **Line breaks shown in the Figma frame are exact, not illustrative.** Match them at each breakpoint
 independently. Natural word-wrap is not sufficient on its own; it must be *verified* to produce the

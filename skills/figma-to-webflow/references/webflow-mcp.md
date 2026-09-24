@@ -82,3 +82,104 @@ Back off ~60s and retry; do not assume a 429 means partial success, re-read and 
 `get_design_context` requires loading its skill first — `ReadMcpResourceTool` on
 `skill://figma/figma-design-to-code/SKILL.md` — then pass
 `skillNames: "resource:figma-design-to-code"`.
+
+## Findings from the Frost landing build
+
+Each of these cost time on a real conversion.
+
+### The WHTML builder puts a `<form>`'s class on the `.w-form` wrapper
+
+The real `<form>` is created **unclassed and unsized**. If the wrapper's class makes it a flex or
+grid container, the unclassed form shrink-to-fits and every field inside collapses to the `<input>`'s
+intrinsic ~195px — at every breakpoint, which is the giveaway (a constant where a responsive value
+should be). Style the FormForm element separately, by id, after the build. **This is the highest
+value item here**: it is the collapsed-form defect from the previous project, reached by a different
+route, and it will recur on every form built through this path.
+
+### `grid-row-gap` accepts variables; `row-gap` does not
+
+`row-gap` returns *"Property row-gap does not support setting a variable of type length"* and the
+whole `update_style` action fails atomically, taking its other properties with it. The legacy
+aliases `grid-row-gap` / `grid-column-gap` accept variable ids — Webflow's own design-system classes
+use them. Remove the modern longhand when you switch, or both land in the CSS and cascade order
+decides.
+
+### `-webkit-appearance` is rejected
+
+*"Invalid style property -webkit-appearance"*, and it fails the whole action. Unprefixed
+`appearance` is accepted and is enough for `<select>` on current browsers.
+
+### `alt` is a setting, not an attribute
+
+`data_element_tool > set_attributes` with `name: "alt"` fails with `An internal error occurred`.
+Use `data_element_settings_tool > set_settings` with `key: "altText"`.
+
+### Builder CSS written as `.is-x` creates a stray unprefixed global
+
+Passing `.is-x { … }` in the builder's `css` produces an **empty combo** plus a global `.is-x`
+holding the rules. Renaming the combo later strands the rules on the old global name and the element
+silently loses them. Write `.parent.is-x { … }`.
+
+### Large WHTML payloads fail with `ECONNRESET`
+
+One action carrying ~40 CSS rules and a full section of markup dropped the socket. Nothing is
+applied, so retrying is safe, but split into three or four actions.
+
+### AVIF is supported natively
+
+`create_asset` on a `.avif` returns `contentType: "image/avif"`. No `compress_assets` step needed.
+
+### Asset deletes are soft, and identical bytes resurrect the old record
+
+Re-uploading a byte-identical file returns the **old asset id**, still carrying the old display
+name. Rename it, or the asset library keeps showing a name from a different project.
+
+### `publish_site` returns before the CSS is live
+
+Verify the published stylesheet **hash changed** before trusting any post-publish measurement.
+Otherwise a correct fix reads as a failure and gets "fixed" twice.
+
+### Rate limits
+
+10 parallel `delete_asset` actions returned 429 and the batch was refused whole. Five at a time
+works.
+
+## Interactions — verify on the published page, not the response
+
+### IX3 interactions may never reach the published output
+
+On the Frost site, two `wf:scroll` interactions were created, accepted, read back byte-correct, and
+returned by `list_interactions` with `visibleOnPageId` as visible on the page. **They never fired.**
+The published HTML contains **zero `data-w-id` attributes** and no ix3 chunk — on that page and on
+every other page of the site. Interactions are stored and scoped, and simply do not publish.
+
+Everything an automated check could reach said pass. The guide's own warning — *"a successful create
+is not proof it played"* — is exactly this. **Grep the published page for `data-w-id` before
+believing an interaction exists**, and fall back to a pasted snippet when it does not.
+
+### The right shape, for when they do publish
+
+- Toggles (`enter`, `leave`, `enterBack`, `leaveBack`) live **inside `scrollTriggerConfig`**,
+  alongside the required `start` and `end`.
+- A class toggle is a Set: `tt: 3`, `timing: {duration: 0}`,
+  `properties: {"wf:class": {"class": {"operation": "addClass", "selectors": [styleBlockId]}}}`.
+- **Two interactions are needed for an on/off state.** Scroll triggers ignore `assignedGroupId`, so
+  one interaction cannot route different toggles to different timelines, and `reverse` is
+  meaningless on a Set.
+
+## Styles are class-based, not selector-based
+
+There is no way to express `.wrapper.is-active .child` through the style API. A state that changes
+several elements is **the same modifier class added to all of them**, each with its own combo:
+
+```
+.nav_band.is-scrolled              background
+.nav_link.is-scrolled              color
+.nav_icon.is-light.is-scrolled     display
+```
+
+One `wf:class` action carries up to 20 targets, so a single action can add the modifier to all of
+them at once. The modifier must also exist as a **standalone style block** for IX3 to address it by
+id — the one case where the "stray unprefixed global" is deliberate rather than a mistake.
+
+`backdrop-filter` is accepted by `update_style`, and Webflow adds the `-webkit-` prefix itself.

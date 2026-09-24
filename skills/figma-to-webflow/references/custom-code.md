@@ -15,6 +15,9 @@ The API refuses more than it documents. Known so far:
   fail with *"An internal error occurred"* on a `custom_value` such as
   `clamp(1.5rem, 2.0833vw, 2.5rem)` — despite the field being documented as accepting an arbitrary
   CSS expression. So fluid type and spacing scales cannot be built as variables.
+- **IX3 interactions may be stored but never published.** Authored through
+  `data_interactions_tool`, accepted, and listed as visible on the page — yet absent from the
+  published HTML, which carried zero `data-w-id`. Scroll-state toggling fell back to a paste.
 - **No write path for page custom code** at all — `update_page_settings` covers SEO, Open Graph,
   slug and JSON-LD only, and its `draft` flag is silently dropped.
 

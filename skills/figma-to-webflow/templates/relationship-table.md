@@ -123,3 +123,37 @@ that may never come.
 horizontal gaps — a nav gap, the rail column gap and a footer menu gap — into one row, because all
 three are 64px at desktop. Below desktop they diverge completely. That merged row is the original
 defect in miniature, so the one-row-per-relationship rule above is not a formatting preference.
+
+## Mandatory rows added after the Frost landing build
+
+### Layout — one row each, or the containers drift apart
+
+| | 1920 | 1440 | 980 | 480 |
+|---|---|---|---|---|
+| Section `padding-inline` | | | | flat = the mobile gutter |
+| Container `max-width` (content width) | | | | **none** — `width: 100%` |
+| Background image + **intrinsic width** | | | | |
+| Section height | | | | |
+
+The apparent desktop gutters (410, 296, 170) are what is left after centring — not authored insets.
+Only the mobile gutter is authored. Record the content width and let `max-width` do the work.
+
+### Line breaks — the words, not the count
+
+One row per text block, four columns. Fill it at **Stage 3** from the frames' `get_metadata`
+(box width, and `height ÷ (fontSize × line-height)` = line count), not per-section at Stage 5.
+
+| Text block | 1920 | 1440 | 980 | 480 | method |
+|---|---|---|---|---|---|
+| e.g. S1 headline | `Frost has worked with` ⏎ `industry titans.` | `Frost has worked` ⏎ `with industry titans.` | same | same, **hard break** | 1 at xxl, 2 at small |
+
+A blank cell blocks the build. "Wraps naturally" is not an entry — *where* it wraps is the entry.
+
+### Notes that generalise
+
+- **`leading-[normal]` is 1.25, not the CSS keyword.** Figma's `normal` on this face gives 80px on
+  64px text; a browser's `normal` gives 1.45. Never write the keyword — write the measured ratio.
+- **Figma text boxes are trimmed; browser line boxes are not.** A 12px line measures 9px in Figma
+  (cap height) and 12px minimum in a browser. Costs ~4px per stacked line.
+- **Browser text is wider.** Sailec measured ~1.6% wider in the browser than in Figma, which is
+  enough to change a break. Give Method 1 a tolerance.
