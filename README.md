@@ -109,7 +109,7 @@ first.
 
 ```
 bin/
-  to-avif.py                        Stage 0.5 — converts, or exits 1. Never silently skips
+  to-avif.py                        Stage 0.5 — converts, or exits 1 with the install command
   gate.js                           the Stage 5 probes, as code that can be run
   check-deps.py                     warns about a missing AVIF encoder. Never blocks
   fixtures/
@@ -139,9 +139,24 @@ skills/figma-to-webflow/
 Most rules here are followed by being followed: a reader writes `rem` instead of `px` and the rule
 has happened. Two are not like that, and both were failing silently.
 
-**AVIF conversion needs a tool that may not be installed.** `bin/to-avif.py` exits **1** with
-install instructions rather than leaving you with PNGs and no warning. It reproduces the hand-run it
-replaces byte-for-byte across 16 files (14.60 MiB → 705.1 KiB).
+**AVIF conversion needs a tool that may not be installed.** `bin/to-avif.py` exits **1** with the
+install command for the platform rather than leaving you with PNGs and no warning. It reproduces
+the hand-run it replaces byte-for-byte across 16 files (14.60 MiB → 705.1 KiB).
+
+That covers the case where the **encoder** is missing. It cannot cover the case where **Python** is
+missing, because the script — and the dependency checker — are written in it. So the interpreter
+case is handled where Python is not required:
+
+| Missing | What happens |
+|---|---|
+| Encoder | `to-avif.py` exits 1, writes nothing, names the install |
+| Encoder | the `SessionStart` hook warns before any work starts |
+| **Python** | the hook's shell guard prints the install line and still exits 0 |
+| **Python** | Stage 0.5 step 0 runs `--help` first, and stops before upload |
+| Either, all missed | rule 5 (`legacyAssets`) fails the build on leftover `.png` references |
+
+Claude **offers** to run the install and waits for a yes. It never installs unasked — that changes
+what is on someone's machine.
 
 **The verification probes need to be run to be known correct.** They used to live as eight snippets
 across two markdown files, retyped each build. Running them as code against a deliberately-wrong

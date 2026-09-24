@@ -133,6 +133,46 @@ both light and dark grounds.
 **All of it happens before the first element is created.** Building first and collecting images as
 you go is how a page ends up half-converted, with one section still pointing at a stale export.
 
+### 0 · Check the converter runs, before exporting anything
+
+```
+python "${CLAUDE_PLUGIN_ROOT}/bin/to-avif.py" --help
+```
+
+One command, and a machine that cannot do this step is found now rather than after a full export
+pass. **If `${CLAUDE_PLUGIN_ROOT}` does not resolve**, find `bin/to-avif.py` under the installed
+plugin directory and use that path — do not skip the step because a variable was empty.
+
+**If the command does not run at all** — no interpreter, `command not found`, or on Windows the
+Microsoft Store advert instead of an error — **or if it exits 1** (that is the no-encoder case, and
+the script prints the fix itself), then:
+
+1. **Say exactly what is missing, with the command for their platform.**
+
+   ```
+   Python    winget install Python.Python.3.12       Windows
+             brew install python@3.12                macOS
+             sudo apt install python3 python3-pip    Linux
+
+   Encoder   pip install --upgrade 'Pillow>=11.3'    preferred, ~40% smaller than ffmpeg
+             winget install ffmpeg / brew install ffmpeg / sudo apt install ffmpeg
+   ```
+
+2. **Offer to run it. Wait for a yes.** Installing software changes the user's machine, so it is
+   their call, not yours. Never run a `sudo` command without explicit agreement.
+3. **Stop before upload, and keep the exports.** Steps 1 and 2 below may finish; step 3 blocks.
+   Nothing unconverted reaches Webflow, and nothing is thrown away — the run resumes at step 3 once
+   the tool is there.
+4. **Never improvise another encoder, and never treat unconverted PNGs as ready.** "The page works"
+   is not the test; it works at 20x the bytes, which is the whole failure this step exists to
+   prevent.
+
+**The backstop, if all of that is somehow missed:** rule 5 — `G.legacyAssets(doc)` must return
+**zero** legacy references before any build is called done. If PNGs reached the page, that check
+fails, whatever happened here.
+
+### The steps
+
 1. **Export** every image from Figma at each breakpoint that needs its own crop. Check the set is
    complete against the section list — the last build reached section 5 before noticing the 1920
    export had never been taken, and the 1440 image had been stretched to cover it.
@@ -145,9 +185,13 @@ you go is how a page ends up half-converted, with one section still pointing at 
    python "${CLAUDE_PLUGIN_ROOT}/bin/to-avif.py" <src-dir> --out <dir>
    ```
 
-   It refuses to run without an encoder (**exit 1**) rather than leaving you with PNGs and no
-   warning. That is the point: this is the one rule in the workflow that can silently not happen.
-   It also writes the asset map, so step 5 is done for you.
+   It refuses to run without an encoder (**exit 1**, nothing written) rather than leaving you with
+   PNGs and no warning, and it writes the asset map, so step 5 is done for you.
+
+   **The script can only protect the case where it runs.** If Python itself is absent the script
+   never executes and cannot report anything — which is why step 0 above checks first, and why the
+   stop rule there is the actual guarantee. This is the one rule in the workflow that can silently
+   not happen, so it is covered twice on purpose.
 
    What it encodes, and why — all measured on the Frost assets, all overridable:
 
