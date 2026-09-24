@@ -2,6 +2,28 @@
 
 Rows 1–6 of the gate are a script. Row 7 is a screenshot, at 1:1, per element.
 
+**The probes live in `bin/gate.js`. Do not retype them from this file.**
+
+Read that file and evaluate its contents in the page under test; it defines `window.__frostGate`.
+Every check returns `{ row, status, detail }`, and `detail` is the evidence that goes in the build
+log — never "looks right".
+
+```js
+const G = window.__frostGate;
+G.rootFontSize(doc)                 // ALWAYS first, or every number below is fiction
+G.lineEnds(doc.querySelector(sel))  // row 6 — the words per line
+G.glue(doc)                         // row 6 — hidden markers with no whitespace
+G.containers(doc, sel)              // row 1 — one number per width
+G.legacyAssets(doc)                 // row 5
+G.altAudit(doc)                     // image metadata
+G.unitAudit(doc)                    // rem/em
+```
+
+`python bin/fixtures/run.py` runs them against a page that is wrong on purpose and exits non-zero
+on any regression. **It has already caught four bugs in the probes themselves** — see the bottom of
+this file. That is the argument for the file existing: prose cannot be run, so prose cannot be
+wrong in a way anything notices.
+
 Everything here was written by debugging it against a real build. The false positives in the last
 section cost more time than the true positives did, which is why they sit beside the checks rather
 than in a footnote.
@@ -17,21 +39,7 @@ being compared against a 1920px design figure. Re-run inside a true 1920 viewpor
 So: render the page in an **iframe at the real width**, scaled down visually with a CSS transform if
 it has to fit the screen. Never measure in a window that merely approximates the breakpoint.
 
-```js
-// harness: real-width iframe, visually scaled to fit
-document.documentElement.innerHTML =
-  '<head><style>*{margin:0;padding:0}body{background:#222;overflow:hidden}' +
-  '#wrap{transform-origin:0 0}#f{border:0;display:block}</style></head>' +
-  '<body><div id="wrap"><iframe id="f"></iframe></div></body>';
-
-window.__show = (path, w, h) => new Promise(res => {
-  const f = document.getElementById('f'), wrap = document.getElementById('wrap');
-  f.style.width = w + 'px'; f.style.height = h + 'px';
-  wrap.style.transform = 'scale(' + Math.min(innerWidth / w, innerHeight / h) + ')';
-  f.onload = () => setTimeout(() => res(f.contentDocument), 1500);
-  f.src = path;
-});
-```
+`G.harness(path, w, h)` does this, and hides the iframe scrollbar rather than padding for it.
 
 Confirm `getComputedStyle(doc.documentElement).fontSize` is what the design assumes **before**
 trusting a single measurement.
@@ -51,26 +59,7 @@ before writing the assertion.
 Counting `<br>`/`<span>` elements proves nothing: a build where every break fires at every width
 counts the same as one where they fire correctly. **Assert which word each rendered line ends on.**
 
-```js
-// last word of every rendered line in a text block
-function lineEnds(el) {
-  const node = [...el.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
-  if (!node) return [];
-  const r = document.createRange(), out = [];
-  let top = null, lastWord = '';
-  const words = node.textContent.split(/(\s+)/);
-  let i = 0;
-  for (const w of words) {
-    r.setStart(node, i); r.setEnd(node, i + w.length);
-    const t = Math.round(r.getBoundingClientRect().top);
-    if (top !== null && t !== top) out.push(lastWord);
-    if (w.trim()) { lastWord = w; top = t; }
-    i += w.length;
-  }
-  out.push(lastWord);
-  return out;
-}
-```
+`G.lineEnds(el)` returns `{ lines, text, ends }`. `ends` is the last word of each rendered line.
 
 Compare that array against the frame, per breakpoint. A mismatch names the exact word.
 
@@ -80,15 +69,8 @@ For every break marker, read the character immediately before and after it in do
 it when the marker is hidden and **neither** side carries whitespace — that is the
 `craftingend-to-end` defect, and it is invisible to both a value audit and a casual read.
 
-```js
-const glued = [];
-doc.querySelectorAll('[class*="brk"], br').forEach(el => {
-  if (getComputedStyle(el).display !== 'none') return;
-  const w = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
-  // walk to find the text node before and after `el`, then:
-  //   if (!/\s$/.test(before) && !/^\s/.test(after)) glued.push(before.slice(-14) + '|' + after.slice(0, 14));
-});
-```
+`G.glue(doc)` does this. The version that lived here was pseudocode — the walk was a comment —
+so it could never have run at all.
 
 ## Four false positives — check for these before reporting a failure
 
@@ -145,3 +127,18 @@ migration — `document.images` and every `url(...)` in `document.styleSheets`.
 
 Not the row that failed — the whole gate, on every section. See the section-3 regression in SKILL.md
 Stage 5: a fix broke the section it was fixing, and only the end-of-build audit caught it.
+
+## Four bugs the fixture caught in the probes themselves
+
+`bin/fixtures/` exists because these were all invisible to review. Each is now a committed check.
+
+| Bug | Why nothing noticed |
+|---|---|
+| The line-break probe grouped by rect `top` | This file **already warned against it**, 66 lines from the code that did it. Prose and code disagreed and neither could tell. It reported an orphaned word that did not exist |
+| `/\.(png\|jpe?g)(\?\|#\|$)/` never matched a CSS background | In a stylesheet the extension is followed by `")`, not end-of-string. It returned a clean "zero legacy references" over a sheet full of PNGs |
+| `if (rule.cssRules) { …; return; }` skipped every plain rule | CSS Nesting gave `CSSStyleRule` a `cssRules` property, and an **empty `CSSRuleList` is truthy**. The unit audit reported "no stray px" against 14 px declarations |
+| `!img.complete` reported lazy images as BROKEN | Webflow lazy-loads by default, so everything below the fold looks broken. Five false positives on the Frost page. A load that **finished** with no pixels is broken; one still in flight is not a verdict |
+
+The pattern in all four: **a check that agrees with the build's own assumption confirms it.** Three
+of them returned `pass`. A probe that cannot fail is not a probe, and the only thing that
+distinguished them was running the code against a page whose answer was known in advance.

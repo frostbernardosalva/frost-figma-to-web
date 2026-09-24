@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>gate.js fixture</title>
+<!--
+  A page that is WRONG ON PURPOSE, in the exact ways this workflow has shipped
+  wrong before. Every defect below cost real time on a real build.
+
+  Run it with `python bin/fixtures/run.py`. If a probe stops finding one of
+  these, the probe regressed — not the fixture.
+
+  Every expectation in gate-fixture.test.js was read off a RENDER, never off a
+  probe. Two bugs in gate.js were caught here before it was ever used:
+    - the legacy-asset regex never matched url("x.png") in CSS
+    - CSS Nesting gave CSSStyleRule a truthy empty `cssRules`, so the unit
+      audit skipped every plain rule and reported a clean pass
+-->
+<style>
+  body { font-family: Georgia, 'Times New Roman', serif; margin: 0; padding: 32px; }
+  .block { width: 340px; font-size: 40px; line-height: 1.25; margin-bottom: 40px; }
+
+  /* DEFECT 1a — the phantom orphaned word.
+     Mixed font-weight on one line. Bold and regular glyphs report different
+     rect tops, so a probe keyed on `top` starts a new line mid-sentence and
+     reports a word that is not orphaned. This is the Frost headline case. */
+  #mixed-weight b { font-weight: 700; }
+
+  /* DEFECT 1b — same failure, guaranteed regardless of font metrics.
+     A size change on one word always moves the rect top. Belt and braces, so
+     the fixture does not depend on a particular family having distinct
+     bold metrics. */
+  #mixed-size .small { font-size: 28px; }
+
+  /* DEFECT 2 — the glue defect. An EMPTY marker toggled to display:none
+     leaves no whitespace, so `crafting` and `end-to-end` render as one word.
+     Invisible to a value audit and to a casual read. */
+  .brk-empty { display: none; }
+
+  /* NOT a defect — Method 2 done correctly: the span WRAPS its text, so
+     hiding it cannot glue anything. glue() must NOT flag this one. */
+  .brk-wrapped { display: none; }
+
+  /* DEFECT 3 — a legacy raster still referenced from CSS after the AVIF pass. */
+  .legacy-bg { background-image: url("never-converted.png"); height: 40px; }
+
+  /* DEFECT 4 — px where the rule says rem. */
+  .bad-units { padding: 24px; letter-spacing: 2px; }
+
+  /* NOT a defect — background-size is the one documented px exception,
+     and 0 is unitless-equivalent. unitAudit() must NOT flag these. */
+  .good-units { background-size: 1920px; margin: 0px; padding: 1.5rem; letter-spacing: 0.02em; }
+</style>
+</head>
+<body>
+
+<!-- Renders as THREE lines. Georgia 400 and 700 share a rect top at this size,
+     so this case does NOT trigger the bug — kept because it is the real-world
+     shape, and it DOES trigger on families whose weights differ in metrics. -->
+<div class="block" id="mixed-weight"><b>Frost</b> has worked with industry titans.</div>
+
+<!-- Renders as THREE lines; a `top`-keyed probe reports FOUR, splitting
+     "We are" from "a design". This is the load-bearing case: a size change
+     always moves the rect top, on every font. -->
+<div class="block" id="mixed-size">We are <span class="small">a design</span> agency built for scale.</div>
+
+<!-- glue() must flag exactly this one: no space either side of a hidden marker. -->
+<p id="glued">We are crafting<span class="brk-empty"></span>end-to-end experiences.</p>
+
+<!-- glue() must NOT flag this: the marker contains its own text. -->
+<p id="wrapped">We are crafting <span class="brk-wrapped">end-to-end</span> experiences.</p>
+
+<!-- NOT a defect — an unclassed, visible <br> is a genuine line break (an
+     address, a verse). It always renders, so it can never glue. glue() must
+     NOT flag these: it did, on the Frost footer address. -->
+<p id="address">Frost Tower, ADB Ave.,<br>cor. Garnet Rd<br>Pasig City</p>
+
+<!-- DEFECT 5 — a responsive break built on <br>. Webflow strips the class, so
+     it fires at every width at once. Flagged separately from glue. -->
+<p id="responsive-br">Move your digital<br class="fr_brk-sm">transformation forward</p>
+
+<!-- altAudit(): one described, one explicitly decorative, one missing entirely. -->
+<img id="img-described" alt="Great Place To Work certified badge, March 2024 to March 2025"
+     src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+<img id="img-decorative" alt=""
+     src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+<img id="img-missing"
+     src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+
+<!-- DEFECT 6 — an image that genuinely failed to load: the request finished
+     and produced no pixels. .svg so it does not also trip the legacy-raster
+     check; this is isolating "broken", not "legacy". -->
+<img id="img-broken" alt="broken on purpose" src="does-not-exist.svg">
+
+<div class="legacy-bg"></div>
+<div class="bad-units">px where rem belongs</div>
+<div class="good-units">the documented exceptions</div>
+
+<!-- containers(): three elements that must all report the SAME width.
+     The third is deliberately narrower — this is the "two container ladders"
+     defect, where one section reaches its content width by a different route. -->
+<div class="probe-container" style="width:600px"></div>
+<div class="probe-container" style="width:600px"></div>
+<div class="probe-container" style="width:560px"></div>
+
+<!-- The harness. The page above is the thing under test; these two load the
+     probes and the expectations, and append the results block. -->
+<script src="../gate.js"></script>
+<script src="gate-fixture.test.js"></script>
+</body>
+</html>

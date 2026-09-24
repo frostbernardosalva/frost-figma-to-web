@@ -78,6 +78,19 @@ and on this project that scope came from a human reviewer, not from the method. 
 floor, not a ceiling, and expect the first review of any new page to find a class of thing the rows
 do not cover. Add it to Stage 3, not to the gate.
 
+### What the probes themselves turned out to be
+
+The Stage 5 probes used to be eight code blocks across `SKILL.md` and `references/verification.md`,
+retyped from memory each build. Moving them into `bin/gate.js` and running them against a
+deliberately-wrong page found **four bugs in the probes**, three of which returned a confident
+`pass`: line grouping by rect `top` (which this skill already warned against, 66 lines from the
+code that did it), a legacy-asset regex that never matched a CSS background, a `cssRules` check made
+truthy for every rule by CSS Nesting, and lazy images reported as broken.
+
+**A check that shares the build's assumption confirms it.** That is the same failure as the
+desktop-first pass table in the first project, one level up: the instrument agreed with the thing it
+was measuring. Prose cannot be run, so prose cannot be caught being wrong.
+
 ### What is still unmeasured
 
 - **The direct-conversion control has never been run.** Nothing here shows the workflow beats a
@@ -86,7 +99,10 @@ do not cover. Add it to Stage 3, not to the gate.
 - **Speed.** The workflow deliberately front-loads measurement to remove rework. That trade has
   never been timed on a complete project. Say so if asked.
 - **Whether it survives a cold read.** Both projects were built by the same reader who wrote these
-  rules. Nobody has yet run this file who did not also write it.
+  rules. Nobody has yet run this file who did not also write it. `evals/` now tests exactly this —
+  two cases, sandboxed, fresh config — but it **has not produced a score**: both need a shell, and
+  the runner refuses to grant one without a sandbox backend, which Windows does not have. Authored,
+  parsing, unrun. Do not cite it as evidence until it has a number.
 
 ## Stage 0 — Audit the design file
 
@@ -123,14 +139,36 @@ you go is how a page ends up half-converted, with one section still pointing at 
 2. **Rename** to a descriptive, sortable scheme: `<ns>-<section>-<role>-<breakpoint>` —
    `fr-s1-photo-xxl.avif`, `fr-s4-bg-md.avif`. The breakpoint suffix is what makes a missing export
    visible at a glance.
-3. **Convert rasters to AVIF.** Vectors stay SVG. Quality ~70 for photographs, ~85 for flat graphics
-   with text or thin strokes. On the last build 12.6 MiB of PNG became **636 KiB** — 4.9%.
-   Local encoders that work: `ffmpeg` (`libaom-av1`), or Python Pillow ≥ 11.3, which has AVIF built
-   in — `Image.open(src).save(dst, quality=70)`.
+3. **Convert rasters to AVIF — run the script, do not hand-roll it.**
+
+   ```
+   python "${CLAUDE_PLUGIN_ROOT}/bin/to-avif.py" <src-dir> --out <dir>
+   ```
+
+   It refuses to run without an encoder (**exit 1**) rather than leaving you with PNGs and no
+   warning. That is the point: this is the one rule in the workflow that can silently not happen.
+   It also writes the asset map, so step 5 is done for you.
+
+   What it encodes, and why — all measured on the Frost assets, all overridable:
+
+   - **quality 70 photographs / 85 flat graphics**, chosen by unique-colour count. The threshold is
+     4096, not 256: the client-logo sprite is a flat graphic with **2967 colours** from antialiased
+     edges, and at 256 it is misfiled as a photograph. `--flat "*logo*"` overrides the guess.
+   - **`speed=4`**, and this is not monotonic — slower is *not* smaller. Same photo at quality 70:
+     speed 0 → 101.0K, speed 4 → **98.6K**, speed 6 → 100.4K, speed 10 → 109.4K.
+   - **alpha is dropped only when provably unused.** Figma exports RGBA regardless; 14 of the 16
+     Frost assets carried a fully-opaque alpha channel. The two that used it kept it.
+   - ffmpeg is a working fallback but compresses worse — 10.3K against Pillow's 7.3K on the same
+     file. Prefer `Pillow >= 11.3`.
+
+   Result on the Frost set: **14.60 MiB → 705.1 KiB (4.7%)** across 16 files, byte-for-byte
+   identical to the hand-run it replaces.
+
 4. **Commit them to the repo** next to the PNG exports. The PNGs stay as the source of truth; the
    AVIFs are what ship.
-5. **Record an asset map** — filename, intrinsic width × height, asset id, and which breakpoint uses
-   it. `background-size` needs the intrinsic width, and you will need it again at Stage 5.
+5. **The asset map is generated** — filename, intrinsic width × height, and the compression
+   achieved. Fill in the asset id and the breakpoint after upload. `background-size` needs the
+   intrinsic width, and you will need it again at Stage 5. Do not hand-edit the table; re-run.
 
 Webflow accepts AVIF natively: `create_asset` on a `.avif` returns `contentType: "image/avif"`. No
 conversion step on the platform side is needed.
@@ -139,9 +177,13 @@ conversion step on the platform side is needed.
 verify **zero** legacy references remain, and only then delete the old ones. The check is one line:
 
 ```js
-[...document.images].filter(i => /\.(png|jpe?g)(\?|$)/i.test(i.currentSrc)).length === 0
-// and the same over document.styleSheets for url(...) in CSS backgrounds
+G.legacyAssets(doc)   // bin/gate.js — images AND every url(...) in document.styleSheets
 ```
+
+Use the function, not a regex you write on the spot. The obvious one —
+`/\.(png|jpe?g)(\?|$)/` — is **wrong** and passes every CSS background, because in a stylesheet
+the extension is followed by `")`, not end-of-string. It shipped in this skill until a fixture
+caught it.
 
 Deleting first leaves a section with a dead URL and no error anywhere.
 
@@ -268,6 +310,8 @@ was unmaintainable. One ladder, or the drift is only a matter of time.
 // 1100,1100,1100,1100,1100,1100   ← one ladder
 // 1100,1020,1100,1100,1100,1100   ← two ladders, and you would never see it by eye
 ```
+
+`G.containers(doc, sel)` in `bin/gate.js` does this and reports the distinct widths.
 
 ### 2 · No `max-width` on the container at mobile
 
@@ -492,16 +536,13 @@ Method 1 needs a tolerance; anything past a few px is a deviation to log, not to
 **4 · Verify with a probe that reports words, not counts.**
 
 ```js
-// group characters into lines by VERTICAL OVERLAP, never by top
-const chars = [];                      // {t, top, bot, mid} per character, via Range rects
-const lines = []; let cur = null;
-for (const c of chars) {
-  if (cur && c.mid >= cur.top && c.mid <= cur.bot) {
-    cur.s += c.t; cur.top = Math.min(cur.top, c.top); cur.bot = Math.max(cur.bot, c.bot);
-  } else { cur = {top: c.top, bot: c.bot, s: c.t}; lines.push(cur); }
-}
-// → ["Frost has worked with", "industry titans."]
+G.lineEnds(el).detail.text    // bin/gate.js — ["Frost has worked", "with industry titans."]
 ```
+
+It groups by **vertical overlap**, never by `top`: a word joins the running line when either
+midpoint falls inside the other's band, so it holds whether the new word is taller or shorter.
+Keying on `top` starts a new line at every size change and at every weight change on a family whose
+weights differ in metrics — which is how a word that was never orphaned got reported as orphaned.
 
 **Grouping by `top` is a false positive generator.** Bold and regular glyphs on the same line have
 different rect tops, so a weight change mid-sentence splits one line into two. That probe reported

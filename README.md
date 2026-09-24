@@ -108,10 +108,25 @@ first.
 ## Layout
 
 ```
+bin/
+  to-avif.py                        Stage 0.5 — converts, or exits 1. Never silently skips
+  gate.js                           the Stage 5 probes, as code that can be run
+  check-deps.py                     warns about a missing AVIF encoder. Never blocks
+  fixtures/
+    gate-fixture.html               a page that is wrong on purpose
+    gate-fixture.test.js            the expectations, read off a render
+    run.py                          drives headless Chrome; exit 1 on regression
+hooks/
+  hooks.json                        SessionStart only — the dependency warning
+evals/
+  asset-prep/                       does a fresh reader actually run the converter?
+  gate-probe/                       does it use the shipped probe, or reinvent the broken one?
+  scaffold.py                       generates the inputs both cases need
 skills/figma-to-webflow/
   SKILL.md                          the staged workflow and its gates
   references/
     webflow-mcp.md                  write rules — read before any Webflow write
+    verification.md                 how to run the gate, and the false positives
     custom-code.md                  paste discipline, fonts.ready, combo display, clobbering
   templates/
     relationship-table.md           Stage 3, with a worked example
@@ -119,11 +134,53 @@ skills/figma-to-webflow/
     CLAUDE.md                       per-project facts and the deviation log
 ```
 
+### Two rules execute; the rest are instructions
+
+Most rules here are followed by being followed: a reader writes `rem` instead of `px` and the rule
+has happened. Two are not like that, and both were failing silently.
+
+**AVIF conversion needs a tool that may not be installed.** `bin/to-avif.py` exits **1** with
+install instructions rather than leaving you with PNGs and no warning. It reproduces the hand-run it
+replaces byte-for-byte across 16 files (14.60 MiB → 705.1 KiB).
+
+**The verification probes need to be run to be known correct.** They used to live as eight snippets
+across two markdown files, retyped each build. Running them as code against a deliberately-wrong
+page found **four bugs in the probes themselves**, three of which returned a confident `pass`:
+
+| | |
+|---|---|
+| grouped lines by rect `top` | the same file warned against it 66 lines away |
+| the legacy-asset regex | never matched `url("x.png")` — quote and paren, not end-of-string |
+| `if (rule.cssRules)` | CSS Nesting made it truthy for every plain rule; the unit audit skipped them all |
+| `!img.complete` | reported every lazy image as BROKEN; Webflow lazy-loads by default |
+
+```
+python bin/fixtures/run.py        # 15 checks, exit 1 on regression
+```
+
+### Running the evals
+
+```
+claude plugin eval . --scaffold --allow-tools Bash Read Glob Grep Skill Write Edit
+```
+
+Both cases need a shell, and the runner refuses to grant one without a sandbox backend — so they do
+**not** run on Windows (`sandbox is enabled but the Windows sandbox is not active`). Linux, macOS or
+CI. The suite is authored and parses; it has not yet produced a score, and no claim here rests on
+one.
+
+Note `--ablation with-without` is the default: the runner adds a no-plugin baseline arm on its own.
+That is the shape `control-test.md` pre-registers, but not the experiment — the control grades
+build fidelity against a real design, and is still blocked on an uncontaminated one.
+
 ## Not included, by design
 
 - **No agent.** The plausible one — "measure a section at three breakpoints, return only the table" —
   would keep node dumps out of the conversation, but nothing has established that reading is where
   the context goes. Add it when the need is observed, and bundle it in here rather than beside it.
+- **No `Stop` hook.** It would fire on every session where the plugin is installed, including work
+  with nothing to do with Webflow, and add latency to every turn to nag about a gate that is usually
+  irrelevant. The gate stays explicit. The only hook is a `SessionStart` warning that never blocks.
 - **No behaviour library.** Accordions, carousels and scroll animations are browser code, not
   instructions for Claude. They belong in their own repo, loaded by the site at runtime.
 - **No project facts.** Site IDs, file keys and node ids go in the per-project `CLAUDE.md`.

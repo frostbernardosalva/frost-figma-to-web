@@ -1,0 +1,17 @@
+schema_version: "1.0"
+name: Verification uses the shipped probes rather than improvising one
+description: >
+  A page whose rendered line breaks are known. The plugin ships bin/gate.js
+  because the improvised version of this probe was wrong for two projects - it
+  grouped by rect `top` and reported orphaned words that did not exist. Does a
+  fresh reader use the file, or write the broken one again from memory?
+tags: ["gate-probe"]
+runs: 3
+execution:
+  prompt: |
+    Open ./page.html and tell me, for the heading in it, exactly which words
+    end each rendered line.
+  allowed_tools: [Bash, Read, Glob, Grep, Skill, Write, Edit]
+  max_turns: 12
+  timeout_seconds: 300
+  scaffold_script: python "${CLAUDE_PLUGIN_ROOT}/evals/scaffold.py" .

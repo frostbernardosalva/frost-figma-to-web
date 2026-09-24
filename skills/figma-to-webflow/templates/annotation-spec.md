@@ -73,13 +73,15 @@ would have been invisible over most of the page. If the file defines no scrolled
 Fill this before Stage 0.5. A missing row is a missing export, and it is much cheaper to find here
 than at section five.
 
-| Section | Role | Breakpoints needing their own crop | Intrinsic w × h | Format | Alt text / decorative |
+| Section | Role | Breakpoints needing their own crop | Intrinsic w × h | Format (AVIF unless vector → SVG) | Alt text / decorative |
 |---|---|---|---|---|---|
 | | | | | | |
 
 - One row per image **per breakpoint that crops differently**. The last project reached section 5
   before noticing one breakpoint's export had never been taken.
-- `background-size` needs the **intrinsic width**, so record it here rather than re-deriving it.
+- **The intrinsic sizes and the format are written for you.** `bin/to-avif.py` generates the asset
+  map; fill this table before the run to catch a missing export, then take the measured numbers
+  from the generated map rather than re-deriving them. `background-size` reads the intrinsic width.
 - Decide alt text now: a descriptive label for content images, explicitly **decorative** for
   chevrons, rules and scroll cues.
 
