@@ -44,6 +44,19 @@ it has to fit the screen. Never measure in a window that merely approximates the
 Confirm `getComputedStyle(doc.documentElement).fontSize` is what the design assumes **before**
 trusting a single measurement.
 
+## Measure after the page settles, not at `DOMContentLoaded`
+
+**Anything that measures rendered text must wait for `document.fonts.ready`.** `DOMContentLoaded`
+fires before webfonts load, so measurements taken there use fallback metrics and are wrong by a few
+pixels per line — enough to break a height lock.
+
+**Three separate defects in one project traced back to exactly this.** The symptom is always
+intermittent and always worse on a cold cache, which makes it easy to dismiss as fixed: with fonts
+already cached they load before `DOMContentLoaded` and nothing goes wrong.
+
+To reproduce: DevTools → Network → **Disable cache**, ideally throttled to Slow 3G. That widens the
+gap between `DOMContentLoaded` and fonts arriving.
+
 ## Row 4 — text content
 
 Diff the rendered text of each block against the Figma text, whitespace-normalised. This catches

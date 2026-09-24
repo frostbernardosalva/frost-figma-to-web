@@ -5,9 +5,9 @@
   },
   "plugins": [
     {
-      "name": "frost-webflow",
+      "name": "frost-figma-to-web",
       "source": "./",
-      "description": "Figma to Webflow conversion workflow, with the Webflow MCP and custom-code rules this team has already paid for once."
+      "description": "Figma to web conversion workflow: audit, annotate, prepare assets, derive a responsive token system, then build section by section behind a seven-row verification gate. Targets Webflow or vanilla HTML/CSS/JS. Ships the asset converter and the gate probes as tested code, not instructions."
     }
   ]
 }

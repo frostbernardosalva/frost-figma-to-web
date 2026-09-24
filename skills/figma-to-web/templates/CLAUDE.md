@@ -1,7 +1,7 @@
 # CLAUDE.md — <project>
 
 Per-project facts. **Universal knowledge does not belong here** — the Webflow MCP rules and the
-custom-code rules live in the `frost-webflow` plugin, so they reach every project instead of one.
+custom-code rules live in the `frost-figma-to-web` plugin, so they reach every project instead of one.
 What belongs here is everything true of *this* project only.
 
 The actual work happens in **Webflow** and **Figma**, reached through MCP. Treat those as the

@@ -1,4 +1,4 @@
-# frost-webflow
+# frost-figma-to-web
 
 Frost's Figma → Webflow conversion workflow, as a Claude Code plugin. It carries the Webflow MCP and
 custom-code rules this team has already paid for once, so the next project does not rediscover them.
@@ -9,7 +9,7 @@ Once per developer, from any directory:
 
 ```
 /plugin marketplace add frostbernardosalva/frost-figma-to-webflow
-/plugin install frost-webflow@frost-tools
+/plugin install frost-figma-to-web@frost-tools
 ```
 
 Restart Claude Code. The skill is then available in **every** folder, which is the point — each
@@ -108,9 +108,11 @@ first.
 ## Layout
 
 ```
+rule-classification.md              every rule labelled browser-truth or platform-scar
 bin/
   to-avif.py                        Stage 0.5 — converts, or exits 1 with the install command
   gate.js                           the Stage 5 probes, as code that can be run
+  verify.py                         render a page headless at a real width, run the gate
   check-deps.py                     warns about a missing AVIF encoder. Never blocks
   fixtures/
     gate-fixture.html               a page that is wrong on purpose
@@ -122,17 +124,36 @@ evals/
   asset-prep/                       does a fresh reader actually run the converter?
   gate-probe/                       does it use the shipped probe, or reinvent the broken one?
   scaffold.py                       generates the inputs both cases need
-skills/figma-to-webflow/
-  SKILL.md                          the staged workflow and its gates
+skills/figma-to-web/
+  SKILL.md                          the staged workflow and its gates, target-neutral
+  targets/
+    webflow.md                      the MCP write rules, quirks and custom-code discipline
+    html.md                         vanilla HTML/CSS/JS — write files, verify headless
   references/
-    webflow-mcp.md                  write rules — read before any Webflow write
     verification.md                 how to run the gate, and the false positives
-    custom-code.md                  paste discipline, fonts.ready, combo display, clobbering
+    figma.md                        reading the design file
   templates/
     relationship-table.md           Stage 3, with a worked example
     annotation-spec.md              Stage 1 — behaviour, states, identity, deliberate-vs-drift
     CLAUDE.md                       per-project facts and the deviation log
 ```
+
+### Two targets, one set of stages
+
+`SKILL.md` holds the stages; `targets/` holds what changes between platforms. The split was made by
+classifying every rule as a **browser truth** (holds everywhere) or a **platform scar** (exists only
+to work around one platform) — `rule-classification.md`, 33 truths, 26 scars, 5 that split.
+
+The distinction matters because scars do not announce themselves. *"Never build a responsive break
+on `<br>`"* reads like a web-development principle; it is a fact about one publisher stripping
+classes. Carry it to another target and it becomes permanent cruft.
+
+Measured before the split: `SKILL.md` was **50% fully portable, 42% mostly, 8% platform-specific** —
+and the one claim with a blinded test behind it, Stage 3, had zero platform references.
+
+**Evidence, honestly:** Webflow has two full projects behind it. The HTML target has **one section**,
+gated at four breakpoints — containers exact, heights within 0.9px. That shows the stages survive a
+change of target. It does not show the HTML target works on a full page.
 
 ### Two rules execute; the rest are instructions
 

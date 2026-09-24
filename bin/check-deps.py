@@ -31,11 +31,11 @@ def main() -> int:
     if shutil.which("ffmpeg"):
         # Usable, but worth saying: on the Frost assets ffmpeg produced a file
         # 41% larger than Pillow at the same quality (10.3K vs 7.3K).
-        print("[frost-webflow] AVIF via ffmpeg. Pillow compresses better "
+        print("[frost-figma-to-web] AVIF via ffmpeg. Pillow compresses better "
               "(~40% smaller) - pip install --upgrade 'Pillow>=11.3'")
         return 0
 
-    print("[frost-webflow] No AVIF encoder found - " + "; ".join(missing) +
+    print("[frost-figma-to-web] No AVIF encoder found - " + "; ".join(missing) +
           ", ffmpeg not on PATH.\n"
           "                Stage 0.5 (asset conversion) will refuse to run.\n"
           "                Fix: pip install --upgrade 'Pillow>=11.3'")
@@ -48,5 +48,5 @@ if __name__ == "__main__":
     except Exception as exc:                            # noqa: BLE001
         # A broken dependency check must never be the thing that breaks a
         # session. Say what happened, exit clean.
-        print(f"[frost-webflow] dependency check failed to run: {exc}")
+        print(f"[frost-figma-to-web] dependency check failed to run: {exc}")
         sys.exit(0)

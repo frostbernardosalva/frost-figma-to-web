@@ -1,9 +1,9 @@
 ---
-name: figma-to-webflow
-description: Convert a Figma design into a Webflow build — audit the design file, record what it leaves unspecified, prepare assets, derive a responsive token system from every breakpoint frame, then build section by section behind a seven-row verification gate. Use when converting a Figma design to Webflow, building a Webflow design system or variable set from a design file, auditing a Webflow build against its Figma source, or writing custom code for behaviour Webflow cannot express.
+name: figma-to-web
+description: Convert a Figma design into a built page — audit the design file, record what it leaves unspecified, prepare assets, derive a responsive token system from every breakpoint frame, then build section by section behind a seven-row verification gate. Targets Webflow or vanilla HTML/CSS/JS. Use when converting a Figma design to Webflow or to HTML, building a design system or token set from a design file, auditing a built page against its Figma source, or writing custom code for behaviour the target cannot express.
 ---
 
-# Figma → Webflow
+# Figma → Web
 
 A staged conversion workflow. Each stage produces an artifact, and the next stage does not start
 until that artifact is complete. The artifacts are the point: a skipped step has to leave a visible
@@ -32,7 +32,7 @@ those values correctly. Do not reach for file cleanup to solve this.
 ## Status: two projects, one claim proven
 
 Derived from **two projects** and measured properly once. The platform facts in `references/`
-describe Webflow and the browser and are safe to rely on. Everything else below is the evidence,
+describe the browser, Figma and the image encoders, and are safe to rely on. Everything else below is the evidence,
 stated plainly, including what it does not cover.
 
 ### What is proven
@@ -90,6 +90,26 @@ truthy for every rule by CSS Nesting, and lazy images reported as broken.
 **A check that shares the build's assumption confirms it.** That is the same failure as the
 desktop-first pass table in the first project, one level up: the instrument agreed with the thing it
 was measuring. Prose cannot be run, so prose cannot be caught being wrong.
+
+### What the second target established
+
+The stages were split from the platform and re-run against vanilla HTML/CSS. **One section**
+(Frost's Clients section, chosen because it is small and its numbers were already recorded), four
+breakpoints, gated with `bin/verify.py`:
+
+**Containers exact at all four widths — 1100 / 848 / 640 / 400 — and every section height inside
+0.9px of the design.** The Webflow build of the same section landed 1-2px over, so this is the same
+order of fidelity by a different route. `bin/gate.js` needed no change; it never knew what produced
+the page.
+
+The gate also earned its place: the first run failed at **1920 only**, by 45.67px. The cause was
+real and specific — the blurb rendered on one line where the design has two, because the test uses
+a substitute face and Sailec is wider. Confirmed against the live build at a true 1920 before
+touching anything.
+
+**This is one section, on a design that had already been built once.** It shows the stages survive a
+change of target. It does not show the HTML target works on a full page, on behaviours, or on a
+design nobody has solved before.
 
 ### What is still unmeasured
 
@@ -161,7 +181,7 @@ the script prints the fix itself), then:
 2. **Offer to run it. Wait for a yes.** Installing software changes the user's machine, so it is
    their call, not yours. Never run a `sudo` command without explicit agreement.
 3. **Stop before upload, and keep the exports.** Steps 1 and 2 below may finish; step 3 blocks.
-   Nothing unconverted reaches Webflow, and nothing is thrown away — the run resumes at step 3 once
+   Nothing unconverted reaches the build, and nothing is thrown away — the run resumes at step 3 once
    the tool is there.
 4. **Never improvise another encoder, and never treat unconverted PNGs as ready.** "The page works"
    is not the test; it works at 20x the bytes, which is the whole failure this step exists to
@@ -214,8 +234,8 @@ fails, whatever happened here.
    achieved. Fill in the asset id and the breakpoint after upload. `background-size` needs the
    intrinsic width, and you will need it again at Stage 5. Do not hand-edit the table; re-run.
 
-Webflow accepts AVIF natively: `create_asset` on a `.avif` returns `contentType: "image/avif"`. No
-conversion step on the platform side is needed.
+Whether the target accepts AVIF directly is a target question — see `targets/<target>.md`. Both
+current targets do.
 
 **Replacing assets on a build that already shipped:** upload the new ones, rebind every reference,
 verify **zero** legacy references remain, and only then delete the old ones. The check is one line:
@@ -241,7 +261,7 @@ Deleting first leaves a section with a dead URL and no error anywhere.
 
 **`alt` is a setting, not an attribute.** `data_element_tool > set_attributes` with `name: "alt"`
 fails with `An internal error occurred` — an opaque message for a real constraint. Use
-`data_element_settings_tool > set_settings` with `key: "altText"`.
+the target file: on some platforms `alt` is a *setting*, not an attribute.
 
 ## Stage 1 — Annotate what the audit found unspecified
 
@@ -272,10 +292,15 @@ project owner's call to make, not yours.
 
 **Gate: no build starts while any of these is open.**
 
-- **One breakpoint map for the whole project.** If custom CSS uses different breakpoints from
-  Webflow's native `main` / `medium` ≤991 / `small` ≤767 / `tiny` ≤479, the bands between them
-  disagree and every token minted afterwards inherits the ambiguity. This is the cheapest decision
-  available and the most expensive to defer.
+- **The target.** `targets/webflow.md` or `targets/html.md`. This decides how Stage 4 delivers
+  tokens, how Stage 5 writes, and which constraints apply at all — several rules in this file exist
+  only to work around one platform, and `rule-classification.md` records which. **Read the target
+  file before Stage 4.**
+- **One breakpoint map for the whole project**, and only one. Two styling systems on two breakpoint
+  maps disagree in the bands between them, and the disagreement surfaces as a bug that appears at
+  one viewport width and nowhere else. On a platform with a fixed ladder you adopt it; where you
+  choose, take the widths from the design's own frames. This is the cheapest decision available and
+  the most expensive to defer.
 - **Behaviour for anything that scrolls, animates or has states** — it determines the element tree.
 - **Font licensing**, before any type token is built on a face that cannot ship.
 - **The project's namespace.** The convention itself is fixed — see **Class naming** below — but the
@@ -316,8 +341,9 @@ primitives.
 
 - **Semantic layer above primitives**, present from the outset. Components reference the semantic
   layer, never primitives, so a change propagates in one edit.
-- **Responsive values live in variable modes, not breakpoint overrides.** A token should resolve to
-  its own per-breakpoint value; components should carry no override for type or semantic spacing.
+- **A token resolves to its own per-breakpoint value; components carry no override** for type or
+  semantic spacing. The delivery mechanism is per target — variable modes, or custom properties
+  redefined inside each media query — but the principle does not change.
 - **Primitive spacing is never responsive; semantic spacing usually is.** A primitive named for its
   pixel value must mean that at every breakpoint or the name lies. A semantic token carries a
   relationship and has no obligation to sit on any scale — which is how a 14px mobile value with no
@@ -325,7 +351,7 @@ primitives.
 - **Minimum practical token set.** Every token traces to a measured value. Do not create tokens
   because other systems have them.
 
-Read `references/webflow-mcp.md` before the first write. It is the difference between a clean build
+**Read `targets/<target>.md` before the first write.** It is the difference between a clean build
 and a day spent on silently dropped styles.
 
 ## Layout contract — every section, no exceptions
@@ -446,23 +472,23 @@ section height, every content width, the page total. If the page moves, the conv
 |---|---|---|
 | **Custom** — a component, element or grouping | underscores, keywords **general → specific** | `gb_testimonial-slider_headshot` |
 | **Utility** — global, one job, reusable anywhere | dashes only, **never** an underscore | `text-size-large` · `margin-large` |
-| **Modifier / variant** | a **combo class** prefixed `is-` | `.gb_tab.is-active` |
+| **Modifier / variant** | a second class prefixed `is-` | `.gb_tab.is-active` |
 
-**The underscore is not decoration — Webflow's Designer turns it into a real folder.**
-`gb_hero_title` files itself under `gb ▸ hero ▸ title`. This is why the project namespace and the
-style-panel organisation are the same decision, and why the namespace belongs in Stage 2.
+The namespace is the first segment and belongs in Stage 2, because every class minted afterwards
+carries it. On some targets the underscore also organises the style panel — see
+`targets/webflow.md`.
 
 Where a project requires that an existing design system not be touched, the namespace *is* the
 protection: a first segment nothing else uses cannot collide.
 
-**Why not BEM.** Webflow publishes a BEM guide, so it is not wrong. But `block--modifier` as a
-standalone global class fights Webflow's own modifier mechanism, and `references/webflow-mcp.md`
-records the trap that follows: **properties land on the combo, not the global.** `is-` makes that
-relationship visible in the name; `--` hides it.
+**Why not BEM.** BEM is not wrong, and on a target where you write the CSS yourself either works.
+The `is-` form is kept for both targets so the team learns one convention — and because on Webflow
+`block--modifier` actively fights the platform's own modifier mechanism. That argument is in
+`targets/webflow.md`.
 
-**One hazard to check, not assume.** Reserved class names are silently dropped — `.label` is one
-(see `references/webflow-mcp.md`). Short utility names sit closer to that hazard than namespaced
-custom classes do, so **query a utility back after creating it**.
+**One hazard to check, not assume.** Some platforms silently drop reserved class names. Short
+utility names sit closer to that hazard than namespaced custom classes do, so where the target
+warns of it, **query a utility back after creating it.**
 
 ## Stage 5 — Build section by section, gated
 
@@ -509,7 +535,7 @@ It has already been run and passed a build that was visibly wrong. Two rules, bo
 ### Check the ranges, not just the three widths
 
 **The three design widths are three points. The browser is continuous.** A breakpoint covers a
-*range* — Webflow's `medium` spans 480–991 — and a value that is correct at the design's width can
+*range* — a "tablet" band may span 480–991 — and a value that is correct at the design's width can
 be nonsense everywhere else in that range.
 
 This has already shipped a defect. A tablet gutter measured at 274px — correct at the 980px design
@@ -634,8 +660,11 @@ Three things this project already paid for:
 - **Block spans cannot overlap.** Where two breakpoints break at different words mid-sentence, one
   set of block spans cannot express both. Use Method 1 for the breakpoint that conflicts, and say
   which approach each breakpoint uses. This is a real limit, not something to improvise past.
-- **Never build a responsive break on `<br>`.** Webflow strips its classes, so every `<br>` fires at
-  every width at once. Spans keep their classes.
+- **Check whether `<br>` can carry a class on your target before relying on it.** On Webflow it
+  cannot — the publisher strips the class, so every `<br>` fires at every width at once, and Method
+  2 is forced. Where classes survive (plain HTML), a classed `<br>` is fine and simpler. This is a
+  target constraint, not a web principle; `bin/gate.js` flags a classed `<br>` so the choice is
+  visible either way.
 
 **Record every deliberate deviation as it is made**, in the project's `CLAUDE.md`. Undocumented
 changes read as defects later, even when the reasoning was sound. This log is a required
@@ -643,11 +672,14 @@ deliverable, not a courtesy.
 
 ## Stage 6 — Behaviours
 
-Everything expressible in Webflow-native stays there. A parallel hand-written CSS layer should
-shrink toward zero, never grow — two styling systems on two breakpoint maps will disagree somewhere,
-and the disagreement surfaces as a bug nobody can locate.
+**Keep one styling system.** Two systems on two breakpoint maps will disagree somewhere, and the
+disagreement surfaces as a bug that appears at one viewport width and nowhere else. Where the
+platform expresses a behaviour natively, use it and let any hand-written layer shrink toward zero;
+where you are writing files anyway, there is only one layer and this costs nothing.
 
-Read `references/custom-code.md` before writing or pasting any snippet.
+**A successful create is not proof it played.** Verify behaviour on the *published* output, not on
+the API response — one platform accepted scroll interactions, listed them as present, and never
+emitted them. See `targets/<target>.md` before writing or pasting any snippet.
 
 ## Stage 7 — Fidelity pass
 
@@ -663,7 +695,16 @@ asking.
 
 ## References
 
-- `references/webflow-mcp.md` — **read before any Webflow write.**
+- `targets/webflow.md` · `targets/html.md` — **read the one you chose at Stage 2, before Stage 4.**
 - `references/verification.md` — **read before running the Stage 5 gate.**
-- `references/custom-code.md` — **read before writing or pasting any snippet.**
+- `references/figma.md` — reading the design file.
 - `templates/relationship-table.md` · `templates/annotation-spec.md` · `templates/CLAUDE.md`
+- `../../rule-classification.md` — every rule labelled *browser truth* or *platform scar*. Read it
+  before carrying a rule to a new target, and before adding one.
+
+## Tools
+
+- `bin/to-avif.py` — Stage 0.5. Converts, or exits 1 naming the install.
+- `bin/gate.js` — the Stage 5 probes. Evaluate in the page under test.
+- `bin/verify.py` — render a page headless at a given width and run the gate.
+- `bin/fixtures/run.py` — the probes' own regression suite.
