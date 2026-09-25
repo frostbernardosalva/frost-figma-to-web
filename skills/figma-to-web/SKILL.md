@@ -296,6 +296,17 @@ project owner's call to make, not yours.
   tokens, how Stage 5 writes, and which constraints apply at all — several rules in this file exist
   only to work around one platform, and `rule-classification.md` records which. **Read the target
   file before Stage 4.**
+
+  - **If the request names one, use it.** "convert this to Webflow", "build this as HTML" — the
+    decision is made. Do not re-ask.
+  - **If it does not, ask before Stage 3.** One sentence is enough: a Webflow site, or files in a
+    repo. Asking costs a turn; guessing costs the token layer and the whole of Stage 5, because
+    those are the two things the target decides.
+  - **Never default to Webflow because it is better documented.** `targets/webflow.md` is twice the
+    size of `targets/html.md` and has two projects of evidence behind it — that is an artefact of
+    which target came first, not a recommendation. An unstated target is a question, not a lean.
+  - **Record the answer** in the project's `CLAUDE.md` under `Target:`, so it survives the
+    conversation.
 - **One breakpoint map for the whole project**, and only one. Two styling systems on two breakpoint
   maps disagree in the bands between them, and the disagreement surfaces as a bug that appears at
   one viewport width and nowhere else. On a platform with a fixed ladder you adopt it; where you
