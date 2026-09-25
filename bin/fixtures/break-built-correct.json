@@ -1,0 +1,10 @@
+{
+  "_what": "A page whose breaks MATCH the design. break-diff must exit 0.",
+  "blocks": {
+    "S1 headline": {
+      "1920": ["Frost has worked with", "industry titans."],
+      "1440": ["Frost has worked", "with industry titans."],
+      "480":  ["Frost has worked", "with industry titans."]
+    }
+  }
+}

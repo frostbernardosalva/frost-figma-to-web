@@ -1,0 +1,23 @@
+{
+  "_what": "What the Figma design does. Shape emitted by agents/break-reader.",
+  "_source": "Frost landing page, recorded in frost-landing-build/relationship-table.md",
+  "blocks": {
+    "S1 headline": {
+      "1920": {
+        "lines": ["Frost has worked with", "industry titans."],
+        "derivedLineCount": 2, "agrees": true, "method": "screenshot",
+        "_boxWidth": 478
+      },
+      "1440": {
+        "lines": ["Frost has worked", "with industry titans."],
+        "derivedLineCount": 2, "agrees": true, "method": "screenshot"
+      },
+      "480": {
+        "lines": ["Frost has worked", "with industry titans."],
+        "derivedLineCount": 2, "agrees": true, "method": "structural",
+        "_note": "hard break - layer name carries a double space",
+        "_boxWidth": 351
+      }
+    }
+  }
+}

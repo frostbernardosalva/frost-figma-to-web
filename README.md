@@ -109,10 +109,13 @@ first.
 
 ```
 rule-classification.md              every rule labelled browser-truth or platform-scar
+agents/
+  break-reader.md                   reads the DESIGN's line breaks. Returns a table, never a verdict
 bin/
   to-avif.py                        Stage 0.5 — converts, or exits 1 with the install command
   gate.js                           the Stage 5 probes, as code that can be run
   verify.py                         render a page headless at a real width, run the gate
+  break-diff.py                     diff design breaks against built breaks, word by word
   check-deps.py                     warns about a missing AVIF encoder. Never blocks
   fixtures/
     gate-fixture.html               a page that is wrong on purpose
@@ -211,9 +214,11 @@ build fidelity against a real design, and is still blocked on an uncontaminated 
 
 ## Not included, by design
 
-- **No agent.** The plausible one — "measure a section at three breakpoints, return only the table" —
-  would keep node dumps out of the conversation, but nothing has established that reading is where
-  the context goes. Add it when the need is observed, and bundle it in here rather than beside it.
+- **Only one agent, and only where a script cannot reach.** `break-reader` exists because a natural
+  wrap is not in the Figma file — you have to look at a rendered picture and read the words, which
+  no CLI can do. It returns measurements, never a verdict, and the comparison is `break-diff.py`.
+  Nothing else here is an agent: the build path is serial and stateful, and parallelising it would
+  save minutes while risking conflicting writes.
 - **No `Stop` hook.** It would fire on every session where the plugin is installed, including work
   with nothing to do with Webflow, and add latency to every turn to nag about a gate that is usually
   irrelevant. The gate stays explicit. The only hook is a `SessionStart` warning that never blocks.

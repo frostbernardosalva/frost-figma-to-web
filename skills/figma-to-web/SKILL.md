@@ -595,6 +595,22 @@ A frame's `get_metadata` gives every text box on that frame in one call — box 
 each — so **four calls produce the whole break table**. Do that once at Stage 3 rather than
 per-section at Stage 5.
 
+**Both halves of this can be mechanical.** The three steps above are what the `break-reader` agent
+does; `bin/gate.js` `lineEnds()` already does the built-page side, and `bin/break-diff.py` compares
+the two word by word and exits non-zero on any mismatch:
+
+```
+break-reader            -> design-breaks.json      (the design's words per line)
+verify.py --json --text -> built-breaks.json       local build
+gate.js in the browser  -> built-breaks.json       live site - verify.py refuses remote URLs
+break-diff.py --design … --built …                 names the width and the first differing word
+```
+
+**Read it by hand when you prefer.** The agent is an accelerator, not a dependency, and it is
+calibrated against one recorded case rather than regression-tested — `agents/break-reader.md` says
+so in its own file. What is not optional is comparing **words**, not counts: the inverted headline
+above was two lines at both widths, and a count check passed it.
+
 **2 · Decide the method with a measurement, not a guess.** Measure the string up to the required
 break in the real font, and compare it with the design's box:
 

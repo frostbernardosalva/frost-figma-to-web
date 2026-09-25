@@ -1,0 +1,12 @@
+{
+  "_what": "THE DEFECT THAT SHIPPED on project two - the S1 headline inverted between",
+  "_what2": "desktop and mobile. Both widths are two lines, so a COUNT check passes it.",
+  "_what3": "break-diff must exit 1 and name 1920 and the word 'with'.",
+  "blocks": {
+    "S1 headline": {
+      "1920": ["Frost has worked", "with industry titans."],
+      "1440": ["Frost has worked", "with industry titans."],
+      "480":  ["Frost has worked with", "industry titans."]
+    }
+  }
+}
