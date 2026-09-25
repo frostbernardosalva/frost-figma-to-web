@@ -1,7 +1,22 @@
 # frost-figma-to-web
 
-Frost's Figma → Webflow conversion workflow, as a Claude Code plugin. It carries the Webflow MCP and
-custom-code rules this team has already paid for once, so the next project does not rediscover them.
+Frost's Figma → web conversion workflow, as a Claude Code plugin. One set of stages, two targets:
+**Webflow**, or **vanilla HTML/CSS**. It carries the rules this team has already paid for once, so
+the next project does not rediscover them.
+
+## Requirements
+
+| | Needed for | Install |
+|---|---|---|
+| Claude Code | everything | |
+| **Python 3** on `PATH` | `bin/*.py` — the converter, the gate runner, the fixtures | `winget install Python.Python.3.12` · `brew install python@3.12` · `apt install python3 python3-pip` |
+| **Pillow ≥ 11.3, with AVIF** | Stage 0.5. It **refuses to run** without an encoder rather than shipping PNGs quietly | `pip install --upgrade 'Pillow>=11.3'` |
+| **Google Chrome** | `bin/verify.py` and `bin/fixtures/run.py` drive it headless | |
+| **Figma MCP** + the desktop app open on the file | every stage | |
+| **Webflow MCP** | the Webflow target only — the HTML target needs nothing else | |
+
+A `SessionStart` hook warns if Python or the AVIF encoder is missing, and never blocks. This table
+is so you can fix it before starting rather than after.
 
 ## Install
 
@@ -21,13 +36,72 @@ To update later:
 /plugin marketplace update frost-tools
 ```
 
+## Check the install worked
+
+Two minutes. **Needs no design, no Figma access and no Webflow site** — it runs against a fixture
+page that is wrong on purpose.
+
+Installing through the marketplace does not leave you a folder to run these from, so clone it once:
+
+```
+git clone https://github.com/frostbernardosalva/frost-figma-to-web
+cd frost-figma-to-web
+python bin/fixtures/run.py
+```
+
+15 checks against the probes themselves. Anything other than `15/15` means the install is broken,
+not the page:
+
+```
+  ok    lineEnds: mixed font-weight matches the render
+  ok    fixture still reproduces the bug: old `top` grouping over-splits
+  ...
+  15/15 checks passed
+```
+
+Then the gate runner, end to end:
+
+```
+python bin/verify.py bin/fixtures/gate-fixture.html --width 1440 --shot row7.png
+```
+
+**This one is supposed to fail.** The fixture has a mismatched container, an unconverted `.png`, a
+missing `alt`, a glued break marker and 14 stray `px` values — five rows should report `FAIL` and
+the command should exit **1**:
+
+```
+  ROW 7 — render saved: row7.png
+        Compare it against the Figma node before believing any row above.
+  bin/fixtures/gate-fixture.html  @ 1440px   content height 2870
+  ok    root        root font-size 16px — rem figures are comparable to the design
+  FAIL  containers  {"distinct": [600, 560], ...
+  FAIL  assets      {"hits": [{"where": "<img> BROKEN", ...
+  FAIL  alt         {"missing": [{"why": "no alt attribute at all"}], ...
+  FAIL  breaks      {"glued": [{"marker": "span.brk-empty", ...
+  FAIL  units       {"count": 14, ...
+
+  5 row(s) failed
+```
+
+If you get `@ 1440px` and five failures, the whole chain works: Python, Chrome, the probes and the
+row-7 render. `row7.png` is written beside you — open it. **That file is the point**; see
+[Row 7 is the one that gets faked](#row-7-is-the-one-that-gets-faked) below.
+
 ## Use
 
-Open Claude Code in the project folder, with the Figma file open in the desktop app, and say:
+Open Claude Code in the project folder, with your Figma file open in the desktop app, and say one
+of:
 
-> Convert the hero section of `<figma url>` into the Webflow site `<name>`
+> Convert `<figma frame url>` to HTML in this folder
+>
+> Convert the hero section of `<figma frame url>` into the Webflow site `<name>`
 
-The skill runs in stages and stops for your input at each gate.
+Use **your own Figma file** — nothing in this repo depends on a particular design, and the design
+this was built from is private.
+
+The skill runs in stages and stops for your input at each gate. Expect it to refuse to start
+building until Stage 3's relationship table is filled in: an empty cell there is the point, not an
+obstacle.
 
 ## Permissions
 
@@ -54,6 +128,9 @@ Copy into the project's `.claude/settings.local.json` so the build is not interr
   }
 }
 ```
+
+**For the HTML target, only the last line matters** — the Webflow entries are inert without a
+Webflow site, and the target writes files into the folder you opened.
 
 Only one Figma tool is listed, and that is deliberate: it makes "do not modify the design" a
 property of the configuration rather than a rule someone has to remember. **If a project decides
@@ -85,7 +162,7 @@ log. That is what makes the process survive contact with a second person.
 
 ## What this is derived from, and what that means
 
-One project, and one measurement. The rules in `skills/figma-to-webflow/references/` describe
+One project, and one measurement. The rules in `skills/figma-to-web/references/` describe
 Webflow and the browser and generalise safely.
 
 **The method has been tested once.** A reader given only a Figma file key, three node ids and the
@@ -156,9 +233,15 @@ classes. Carry it to another target and it becomes permanent cruft.
 Measured before the split: `SKILL.md` was **50% fully portable, 42% mostly, 8% platform-specific** —
 and the one claim with a blinded test behind it, Stage 3, had zero platform references.
 
-**Evidence, honestly:** Webflow has two full projects behind it. The HTML target has **one section**,
-gated at four breakpoints — containers exact, heights within 0.9px. That shows the stages survive a
-change of target. It does not show the HTML target works on a full page.
+**Evidence, honestly:** Webflow has two full projects behind it. The HTML target has **one full
+page** — six sections, header, footer, four breakpoints — plus the single-section smoke test that
+came before it. The gate passes every row at 1920/1440/980/480, and **six of seven sections are
+exact against the Figma frames**; the page totals are +9.6 / +10.1 / +18 / +17.6, all of it in the
+one section that stacks the most text, where Figma's cap-trim differs from a browser line box by
+~4px per line.
+
+That page also shipped **visibly wrong once**, passed every numeric row while doing it, and is the
+reason `--shot` exists. See below.
 
 ### Two rules execute; the rest are instructions
 
@@ -198,6 +281,35 @@ page found **four bugs in the probes themselves**, three of which returned a con
 ```
 python bin/fixtures/run.py        # 15 checks, exit 1 on regression
 ```
+
+### Row 7 is the one that gets faked
+
+The gate has seven rows. Rows 1–6 are a script. **Row 7 is "screenshot the build against the Figma
+node, 1:1, per element"** — and for most of this plugin's life it produced no artifact, so it was
+skippable by simply not doing it.
+
+It got skipped. A full page passed rows 1–6 at four widths with six of seven sections exact and was
+wrong in **31 places**: two blocks 238px and 179px above where the design puts them, a headline
+rendered white on white at 480, a component built mirrored, eight headings at the wrong weight. None
+of it is visible to a height check — a fixed-height frame keeps its height no matter where the
+content inside it sits.
+
+So `bin/verify.py` now takes `--shot`:
+
+```
+python bin/verify.py dist/index.html --width 1440 --shot row7.png
+```
+
+The command that prints rows 1–6 now also writes the render and says *"compare it against the Figma
+node before believing any row above."* Two things that had to be fixed to make it real: the harness
+iframe was `visibility:hidden`, which photographs as a blank page — worse than no row 7, because it
+looks done — and it was 1200px tall, so the capture was a viewport slice rather than the page.
+
+The other half of the same failure was the **relationship table**, which recorded size, line-height
+and tracking but not **weight** or **colour**, so both were inferred and both were wrong.
+`templates/relationship-table.md` now has columns for them, and says to record colour **with its
+opacity** — Figma stores muted text as a base colour at 70/80/50%, and reading that as a flat colour
+token is how a build ends up with an invented one that is right over exactly one background.
 
 ### Running the evals
 

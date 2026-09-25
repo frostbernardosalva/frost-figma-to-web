@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Convert raster exports to AVIF, and write the asset map the build reads back.
 
-Stage 0.5 of the figma-to-webflow skill. This exists as a script rather than as
+Stage 0.5 of the figma-to-web skill. This exists as a script rather than as
 instructions because it is the one rule in the workflow that can silently not
 happen: on a machine with no AVIF encoder, prose telling you to convert produces
 PNGs that upload fine, render fine, and cost 20x the bytes with nobody the wiser.
