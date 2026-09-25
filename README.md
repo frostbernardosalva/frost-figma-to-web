@@ -8,7 +8,7 @@ custom-code rules this team has already paid for once, so the next project does 
 Once per developer, from any directory:
 
 ```
-/plugin marketplace add frostbernardosalva/frost-figma-to-webflow
+/plugin marketplace add frostbernardosalva/frost-figma-to-web
 /plugin install frost-figma-to-web@frost-tools
 ```
 
