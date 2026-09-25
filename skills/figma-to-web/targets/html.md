@@ -1,13 +1,22 @@
 # Target: vanilla HTML / CSS / JS
 
-**Status: one section, measured.** Frost's Clients section was built to this file and gated at four
-breakpoints — containers exact (1100 / 848 / 640 / 400), every height inside 0.9px of the design.
-The gate caught a real line-break divergence at 1920 on the first run.
+**Status: a full page, measured.** The Frost landing page — six sections, header, footer — was
+built to this file and gated at four breakpoints. Every gate row passes at every width. **Five of
+seven sections are exact at all four widths**; page totals land +7 / +9 / +69 / −6 against the
+Webflow build of the same design, which itself landed +9 / +9 / +8 / +4 against the frames. The
+seven containers return one number at twelve widths from 1920 down to 375, with no horizontal
+scroll. The S1 headline inversion reproduces — the defect that shipped on the Webflow build and
+that a line-count check passes.
 
-That is one small section, on a design already built once on the other target. The stages survive
-the change of target; nothing here shows this file works on a full page, on behaviours, or on an
-unsolved design. Everything else this workflow can prove was proved on Webflow builds. See
-`../../rule-classification.md` for which rules carried and which did not.
+Three things it does **not** show, and they are the honest limits:
+
+- **No behaviours.** No sticky header, no hamburger, no carousel. All JavaScript is unbuilt.
+- **The design was already solved.** An 818-line build log records every defect and measurement, and
+  Stages 0–3 were reused rather than redone. This tests the target, not the workflow.
+- **One section is 74px over at one width.** Section 6 at 980, whose design frame carries 102px of
+  unexplained slack. Left visible rather than shaved to fit.
+
+See `../../rule-classification.md` for which rules carried to this target and which did not.
 
 The stages in `SKILL.md` are unchanged. Only the bindings below differ.
 

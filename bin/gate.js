@@ -322,6 +322,7 @@
                             'border-top-width', 'border-right-width',
                             'border-bottom-width', 'border-left-width']);
     const hits = [];
+    const custom = [];
 
     [...doc.styleSheets].forEach((sheet) => {
       let rules;
@@ -337,18 +338,33 @@
         for (const prop of rule.style) {
           const v = rule.style.getPropertyValue(prop);
           if (exempt.has(prop)) continue;
+          const px = /(^|\s|\()(-?\d*\.?\d+)px/.test(v) && !/^0px$/.test(v.trim());
+
+          // A CUSTOM PROPERTY's purpose is unknowable here. `--s1-bg-w: 1440px`
+          // is the documented background-size exception; `--gap: 24px` is a
+          // defect. The probe cannot tell them apart, so it reports rather than
+          // judges — the same rule everything else in this plugin follows.
+          if (prop.startsWith('--')) {
+            if (px) custom.push({ selector: rule.selectorText, prop, value: v });
+            continue;
+          }
           if (prop === 'letter-spacing' && /px/.test(v)) {
             hits.push({ selector: rule.selectorText, prop, value: v, want: 'em' });
-          } else if (/(^|\s|\()(-?\d*\.?\d+)px/.test(v) && !/^0px$/.test(v.trim())) {
+          } else if (px) {
             hits.push({ selector: rule.selectorText, prop, value: v, want: 'rem' });
           }
         }
       });
     });
 
-    return hits.length
-      ? no(6, { count: hits.length, sample: hits.slice(0, 25) })
-      : ok(6, 'no stray px outside the background-size exception');
+    if (hits.length) {
+      return no(6, { count: hits.length, sample: hits.slice(0, 25),
+                     customPropsToCheck: custom.slice(0, 25) });
+    }
+    return ok(6, 'no stray px outside the background-size exception'
+      + (custom.length ? ` — ${custom.length} custom propert${custom.length === 1 ? 'y' : 'ies'} `
+        + `hold px and were NOT judged: ${custom.slice(0, 6).map((c) => c.prop).join(', ')}`
+        + `${custom.length > 6 ? ' …' : ''}. Confirm each is the background-size exception.` : ''));
   }
 
   window.__frostGate = {
