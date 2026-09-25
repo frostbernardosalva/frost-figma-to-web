@@ -116,6 +116,7 @@ bin/
   gate.js                           the Stage 5 probes, as code that can be run
   verify.py                         render a page headless at a real width, run the gate
   break-diff.py                     diff design breaks against built breaks, word by word
+  audit-assets.py                   what an already-built site would save by going AVIF
   check-deps.py                     warns about a missing AVIF encoder. Never blocks
   fixtures/
     gate-fixture.html               a page that is wrong on purpose
