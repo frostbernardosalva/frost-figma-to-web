@@ -1,7 +1,7 @@
 {
   "name": "frost-figma-to-web",
   "description": "Figma to web conversion workflow: audit, annotate, prepare assets, derive a responsive token system, then build section by section behind a seven-row verification gate. Targets Webflow or vanilla HTML/CSS/JS. Ships the asset converter and the gate probes as tested code, not instructions.",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "author": {
     "name": "Frost Design Group"
   }

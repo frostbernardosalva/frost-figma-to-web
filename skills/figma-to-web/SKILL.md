@@ -546,6 +546,27 @@ It has already been run and passed a build that was visibly wrong. Two rules, bo
 - **Re-measure after swapping a styled `div` for a real control.** `<input>` and `<select>` do not
   inherit the width a `div` took by default. That is precisely how the 191px field shipped.
 
+#### Three things only row 7 can see
+
+A later build passed rows 1-6 at four widths with **six of seven sections exact** and was wrong in
+thirty-one places. The three that matter are kinds, not slips:
+
+**A fixed-height frame whose last block is bottom-aligned.** Figma writes this as `flex-[1_0_0]`
+with `items-end`, or as a spacer instance that is itself `flex-[1_0_0]` — the block *absorbs* the
+frame's slack. Build it as a fixed gap and all the slack falls to the bottom instead: in that build
+a card sat **238px** above where it belongs and a column pair **179px** above, landing on the pale
+part of a photograph where its white text was unreadable. **The section heights were exact.** They
+cannot be anything else — the frame's height never changed. If a design frame has a fixed height and
+its content does not fill it, find out which child eats the difference before writing a gap.
+
+**A colour that inverts at one breakpoint.** The same role was `#daebfa` at three widths and
+`#08090d` at the fourth, because the mobile frame puts the header on the light part of the crop.
+Built from the desktop token, a headline, an eyebrow and a blurb were white on white. Every number
+was right and nothing was readable.
+
+**A component built mirrored.** `image | text | chevron` where the design is `chevron | text |
+image`. Same box, same height, same content — and obviously wrong the moment anyone looks.
+
 ### Check the ranges, not just the three widths
 
 **The three design widths are three points. The browser is continuous.** A breakpoint covers a

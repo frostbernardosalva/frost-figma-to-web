@@ -79,6 +79,12 @@ made from a table without them had eight headings at 400 that should have been 7
 roles built in the body colour when the design uses a muted variant that no token captured. Both are
 invisible to every numeric row of the gate.
 
+**Record the opacity with the colour.** Figma states muted text as a base colour *plus* an
+opacity — `#41393e` at 80, `#daebfa` at 70, white at 50 — and `get_design_context` returns it that
+way (`opacity-80`, `text-white`). Read it as a separate colour token and you will invent one: a
+build that did this produced `#676065` and `#58616d`, which are those composites over one specific
+background and wrong over any other. Write `#41393e @ 80`, and build it as colour + opacity.
+
 **Sample colour 1:1, never off a scaled render.** At 0.625 scale, antialiasing makes 20px regular
 text read ~35 points lighter than its fill, and bold text read close to true — so a downscaled
 screenshot suggests a colour difference where there is none, and hides one where there is. Request
