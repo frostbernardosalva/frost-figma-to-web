@@ -98,7 +98,8 @@ def target_url(target: str) -> str:
 
 
 def build_harness(container_sel: str, text_sel: str | None, src: str,
-                  width: int, height: int, section_sel: str | None = None) -> str:
+                  width: int, height: int, section_sel: str | None = None,
+                  visible: bool = False) -> str:
     """JS appended after gate.js: render `src` in an iframe at exactly `width`,
     run the rows against it, and print one JSON blob."""
     lines_call = ("safe('lines', function () { return G.lineEnds(d.querySelector("
@@ -107,7 +108,9 @@ def build_harness(container_sel: str, text_sel: str | None, src: str,
 (function () {
   var G = window.__frostGate, out = {};
   var f = document.createElement('iframe');
-  f.style.cssText = 'position:absolute;left:0;top:0;border:0;visibility:hidden';
+  // visible when a screenshot is being taken - a hidden iframe photographs
+  // as a blank page, which is worse than no row 7 at all because it looks done
+  f.style.cssText = 'position:absolute;left:0;top:0;border:0;' + __VIS__;
   f.width = __W__; f.height = __H__;
   f.src = __SRC__;
   document.body.appendChild(f);
@@ -160,7 +163,12 @@ def build_harness(container_sel: str, text_sel: str | None, src: str,
     else setTimeout(go, 1200);
   };
 })();
-""".replace('__W__', str(width)).replace('__H__', str(height))    .replace('__SRC__', json.dumps(src))    .replace('__CONTAINER__', json.dumps(container_sel))    .replace('__LINES__', lines_call)    .replace('__SECTION__', json.dumps(section_sel))
+""".replace('__VIS__', "''" if visible else "'visibility:hidden'") \
+   .replace('__W__', str(width)).replace('__H__', str(height)) \
+   .replace('__SRC__', json.dumps(src)) \
+   .replace('__CONTAINER__', json.dumps(container_sel)) \
+   .replace('__LINES__', lines_call) \
+   .replace('__SECTION__', json.dumps(section_sel))
 
 
 def main() -> int:
@@ -168,12 +176,18 @@ def main() -> int:
     ap.add_argument("target", help="a local path or an http(s) URL")
     ap.add_argument("--width", type=int, default=1440)
     ap.add_argument("--height", type=int, default=1200)
+    ap.add_argument("--shot-height", type=int, default=6000,
+                    help="host window height when --shot is used, so the whole page is captured")
     ap.add_argument("--container", default='[class*="_inner"], [class*="container"]',
                     help="selector for the elements that must all report ONE width")
     ap.add_argument("--section", default=None,
                     help="selector whose height to report (a section, for height locks)")
     ap.add_argument("--text", default=None,
                     help="selector for a text block whose rendered line breaks to report")
+    ap.add_argument("--shot", type=Path, default=None,
+                    help="ALSO save the render here. Row 7 of the gate is a screenshot "
+                         "compared against the design; a gate whose last row needs a separate "
+                         "manual step is a gate with six rows.")
     ap.add_argument("--chrome", default=None)
     ap.add_argument("--json", action="store_true", help="print raw JSON and nothing else")
     args = ap.parse_args()
@@ -190,8 +204,11 @@ def main() -> int:
         if url.startswith("file://"):
             src = Path(args.target).resolve()
             temp_page = src.with_name(f".verify-{src.name}")
+            # a full-page shot needs a tall iframe, not a 1200px viewport slice
+            iframe_h = args.shot_height if args.shot else args.height
             harness = build_harness(args.container, args.text, src.name,
-                                    args.width, args.height, args.section)
+                                    args.width, iframe_h, args.section,
+                                    visible=bool(args.shot))
             temp_page.write_text(
                 "<!doctype html><html><head><meta charset='utf-8'>"
                 "<style>html,body{margin:0;padding:0;overflow:hidden}</style></head><body>"
@@ -212,8 +229,11 @@ def main() -> int:
              # The window size is irrelevant now: the IFRAME is the viewport,
              # and it is exactly --width. A fixed host window also sidesteps
              # Chrome's ~500px minimum window width, which made 480 untestable.
-             "--hide-scrollbars", "--window-size=1200,900",
-             f"--user-data-dir={profile}", "--dump-dom", url],
+             "--hide-scrollbars",
+             # A tall window so --shot captures the whole page, not a viewport slice.
+             f"--window-size={max(args.width + 120, 1200)},{args.shot_height}",
+             f"--user-data-dir={profile}", "--dump-dom", url]
+            + ([f"--screenshot={args.shot.resolve()}"] if args.shot else []),
             capture_output=True, text=True, timeout=180,
         )
     except subprocess.TimeoutExpired:
@@ -236,6 +256,9 @@ def main() -> int:
             isinstance(v, dict) and v.get("status") == "fail" for v in data.values()) else 1
 
     actual = data["page"]["width"]
+    if args.shot:
+        print(f"  ROW 7 — render saved: {args.shot}")
+        print("        Compare it against the Figma node before believing any row above.")
     sec = data["page"].get("section")
     print(f"  {args.target}  @ {actual}px   content height {data['page']['height']}"
           + (f"   section {sec}" if sec is not None else ""))

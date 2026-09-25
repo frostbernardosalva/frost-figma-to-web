@@ -70,9 +70,19 @@ A blank height cell means unmeasured and blocks the build, exactly like every ot
 One row per **role**, not per class. Two roles whose values coincide at desktop are still two roles;
 collapsing them is the single most common way this goes wrong.
 
-| Role | Size D/T/M | Line-height | Tracking | Used by | Verdict |
-|---|---|---|---|---|---|
-| | | | | | |
+| Role | Size D/T/M | **Weight** | Line-height | Tracking | **Colour** | Used by | Verdict |
+|---|---|---|---|---|---|---|---|
+| | | | | | | | |
+
+**Weight and colour are columns because their absence has already shipped a wrong page.** A build
+made from a table without them had eight headings at 400 that should have been 700, and three text
+roles built in the body colour when the design uses a muted variant that no token captured. Both are
+invisible to every numeric row of the gate.
+
+**Sample colour 1:1, never off a scaled render.** At 0.625 scale, antialiasing makes 20px regular
+text read ~35 points lighter than its fill, and bold text read close to true — so a downscaled
+screenshot suggests a colour difference where there is none, and hides one where there is. Request
+the node at `maxDimension` ≥ its natural width and take the commonest dark pixel.
 
 ## Holding area — measured at fewer than three breakpoints
 
