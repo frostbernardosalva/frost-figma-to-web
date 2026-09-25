@@ -1,0 +1,13 @@
+{
+  "_page": "home", "_width": "1920",
+  "_what": "Desktop scan. The mobile-only background is NOT referenced here.",
+  "row": 5, "status": "fail",
+  "detail": {
+    "hits": [
+      {"where": "<img>",        "url": "https://cdn.example.com/a/hero-desktop.png"},
+      {"where": ".s4_bg",       "url": "url(\"https://cdn.example.com/a/bg-wide.png\")"},
+      {"where": "<img>",        "url": "https://cdn.example.com/a/logo-sprite.png"}
+    ],
+    "pending": []
+  }
+}

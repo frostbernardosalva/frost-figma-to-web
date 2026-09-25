@@ -238,7 +238,10 @@ Whether the target accepts AVIF directly is a target question — see `targets/<
 current targets do.
 
 **Replacing assets on a build that already shipped:** upload the new ones, rebind every reference,
-verify **zero** legacy references remain, and only then delete the old ones. The check is one line:
+verify **zero** legacy references remain, and only then delete the old ones. `bin/audit-assets.py`
+sizes the saving without touching anything; `bin/rebind-plan.py` turns page scans into an ordered
+plan that doubles as the rollback record; the target file carries the procedure and the four traps
+that shape it. The check is one line:
 
 ```js
 G.legacyAssets(doc)   // bin/gate.js — images AND every url(...) in document.styleSheets

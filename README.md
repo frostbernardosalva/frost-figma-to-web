@@ -117,6 +117,7 @@ bin/
   verify.py                         render a page headless at a real width, run the gate
   break-diff.py                     diff design breaks against built breaks, word by word
   audit-assets.py                   what an already-built site would save by going AVIF
+  rebind-plan.py                    ordered plan for replacing live assets; also the rollback record
   check-deps.py                     warns about a missing AVIF encoder. Never blocks
   fixtures/
     gate-fixture.html               a page that is wrong on purpose

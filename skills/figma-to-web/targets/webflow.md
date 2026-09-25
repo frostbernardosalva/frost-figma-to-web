@@ -123,6 +123,38 @@ applied, so retrying is safe, but split into three or four actions.
 
 `create_asset` on a `.avif` returns `contentType: "image/avif"`. No `compress_assets` step needed.
 
+## Replacing a live site's assets — the rebind procedure
+
+**Status: built and dry-tested, never run on a real conversion.** The Frost site has no legacy
+raster left to rebind, so phases 1–5 below are reasoned from the recorded traps and exercised
+against fixtures — not demonstrated end to end. **Run it on one asset, on a page you can afford to
+break, before it goes near a client site.**
+
+`bin/audit-assets.py` sizes the opportunity. `bin/rebind-plan.py` turns page scans into an ordered
+plan that is also the rollback record. This is the execution.
+
+**The danger that shapes all of it:** `gate.js legacyAssets()` inspects **one rendered page at one
+width**. An asset can also be referenced on a page you did not scan, or only at a breakpoint you did
+not render — a mobile-only background is invisible at 1440. Deleting because one page looks clean is
+how you silently break another. **Phase 5 is gated on coverage, not on a single green check.**
+
+1. **Upload**, using the name in the plan. Verify each returns `contentType: "image/avif"` **and a
+   new asset id** — identical bytes return the *old* id under its old display name.
+2. **Rebind** one reference at a time from the plan. `img` entries are element bindings; `css`
+   entries are `background-image` on the named selector.
+3. **Publish, then confirm the stylesheet hash changed.** `publish_site` returns before the CSS is
+   live, so a correct fix otherwise reads as a failure and gets "fixed" twice.
+4. **Re-scan every page at every width in the plan's coverage list** and require
+   `legacyAssets()` → **zero** on all of them.
+5. **Only then delete, five at a time.** Ten in parallel returned 429 and the batch was refused
+   whole. **Refuse this phase if phase 4 is incomplete for any scanned page.**
+
+Never automate phase 5, and never fold it into an earlier phase. Assets the plan could not replace
+are listed as warnings and must not be deleted at all.
+
+**Out of scope, deliberately:** assets referenced only from CMS items are invisible to a
+rendered-page scan. Do not assume a clean scan means an unused asset.
+
 ### Asset deletes are soft, and identical bytes resurrect the old record
 
 Re-uploading a byte-identical file returns the **old asset id**, still carrying the old display
