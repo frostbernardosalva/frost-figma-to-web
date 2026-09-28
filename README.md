@@ -99,6 +99,9 @@ of:
 Use **your own Figma file** — nothing in this repo depends on a particular design, and the design
 this was built from is private.
 
+**Run one conversion per session.** A conversion is a long, stateful job — sharing a session with
+unrelated work is what makes it run out of context in the middle of a build.
+
 The skill runs in stages and stops for your input at each gate. Expect it to refuse to start
 building until Stage 3's relationship table is filled in: an empty cell there is the point, not an
 obstacle.
@@ -188,6 +191,7 @@ first.
 rule-classification.md              every rule labelled browser-truth or platform-scar
 agents/
   break-reader.md                   reads the DESIGN's line breaks. Returns a table, never a verdict
+  frame-measurer.md                 measures ONE breakpoint frame. Stage 3 runs them concurrently
 bin/
   to-avif.py                        Stage 0.5 — converts, or exits 1 with the install command
   gate.js                           the Stage 5 probes, as code that can be run
@@ -328,11 +332,16 @@ build fidelity against a real design, and is still blocked on an uncontaminated 
 
 ## Not included, by design
 
-- **Only one agent, and only where a script cannot reach.** `break-reader` exists because a natural
-  wrap is not in the Figma file — you have to look at a rendered picture and read the words, which
-  no CLI can do. It returns measurements, never a verdict, and the comparison is `break-diff.py`.
-  Nothing else here is an agent: the build path is serial and stateful, and parallelising it would
-  save minutes while risking conflicting writes.
+- **Agents only where a script cannot reach, and only for reading.** `break-reader` exists because
+  a natural wrap is not in the Figma file — you have to look at a rendered picture and read the
+  words, which no CLI can do. `frame-measurer` exists because Stage 3 reads three or four frames
+  that do not depend on each other, and reading them in sequence costs wall-clock for nothing. Both
+  return measurements, never a verdict; the comparison is `break-diff.py` and the token decisions
+  stay with the parent.
+
+  **The build path is still serial**, and deliberately so: it is stateful, and parallelising writes
+  would save minutes while risking conflicting ones. The line is between *reading the design*, which
+  may run in parallel, and *writing the build*, which may not.
 - **No `Stop` hook.** It would fire on every session where the plugin is installed, including work
   with nothing to do with Webflow, and add latency to every turn to nag about a gate that is usually
   irrelevant. The gate stays explicit. The only hook is a `SessionStart` warning that never blocks.

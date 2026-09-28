@@ -124,7 +124,37 @@ design nobody has solved before.
   the runner refuses to grant one without a sandbox backend, which Windows does not have. Authored,
   parsing, unrun. Do not cite it as evidence until it has a number.
 
+## Recording discipline — read once, applies to every stage
+
+**The numbers are the deliverable. The prose around them is not.**
+
+Each gate records what it measured: the table row, the values, pass or fail, and — when something
+was changed — one line in the deviation log saying what and why. That is the complete output. A
+paragraph explaining how the measurement felt is not evidence, and it is not free.
+
+This is measured, not a preference. Across one week of conversions, **74% of the time the machine
+spent working was spent writing text**, against 26% running tools. Webflow's API was about 5% of a
+full conversion, Figma 2%. One conversion produced an **828-line build log** on top of its
+311-line relationship table and 262-line project file — and the build log was never a required
+artefact. It was a habit.
+
+So:
+
+- **Write the row, not the essay.** "Row 1 · section 1080, expected 1080 · pass" is complete.
+- **A finding gets one line**, plus the numbers that prove it. Reserve the paragraph for a defect
+  whose *cause* is not obvious from the numbers — those are worth the words, and they are rare.
+- **Never restate a table in sentences** underneath it.
+- **Do not summarise what you just did** unless asked. The artefacts say what was done.
+
+**Nothing that carries evidence is dropped.** `annotation-spec.md`, `relationship-table.md`, the
+deviation log and the gate results are all still required, in full. This rule removes narration,
+never measurement.
+
 ## Stage 0 — Audit the design file
+
+**Run one conversion per session.** The recorded build hit the context limit twice mid-flight, and
+each time cost a summary to re-read and a thread to pick back up. A conversion is a long, stateful
+job; sharing a session with unrelated work is what makes it run out of room.
 
 **First: verify the frames.** Resolve every frame id and report each one's `name` and `width`.
 **Refuse to proceed unless there are three distinct frames at three distinct widths.** Supplied
@@ -350,6 +380,37 @@ breakpoint, plus the sections it was measured in. Three rules, all learned by br
 Then: **new token when values diverge across breakpoints; reuse with an override when they agree.**
 Rows whose three values differ become semantic tokens carrying modes. Rows that agree become
 primitives.
+
+### Take the frames at the same time, not one after another
+
+**Spawn one `frame-measurer` per breakpoint frame, all in a single message**, so they run
+concurrently. Each is given the file key, **one** frame root node id and the width it represents.
+Each returns a table and a JSON block of that frame's values. You merge them.
+
+Nothing about the reads depends on the others. Stage 3 takes three or four full passes over the
+design, and taken in sequence that is wall-clock spent for no reason. (How much it costs as a share
+of a conversion has not been measured — the one conversion timed end to end was measured whole, at
+6h 33m, not stage by stage.)
+
+Two things this does **not** change:
+
+- **The gate is unchanged.** Three measurements before a value enters the build; an empty cell means
+  unmeasured. The gate now applies at the merge instead of as you go, which is the same gate.
+- **The agents do not decide anything.** They return numbers. Choosing what becomes a token, what is
+  scoped, and what is one relationship against two stays here, with you. `frame-measurer` runs on a
+  smaller model precisely because measuring is mechanical and deciding is not — so do not ask it to
+  decide, and do not accept an answer shaped like a judgement.
+
+**The trade, stated plainly:** several agents each carry their own context, so this costs more
+tokens than reading the frames yourself. It buys wall-clock. That is the trade this workflow has
+chosen; if a project needs the opposite, read the frames in sequence and say so in the log.
+
+**Merging is where the care goes.** An agent reports only what it saw in its own frame, so two
+frames reporting `24` is two independent measurements — that is the point. But an agent that
+returns `—` (not present) and one that returns `?` (present, unreadable) mean different things, and
+`?` is an unmeasured cell: it blocks the build exactly as a blank does. Check every `unread` list
+before you treat a row as complete.
+
 
 ## Stage 4 — Build the design system
 

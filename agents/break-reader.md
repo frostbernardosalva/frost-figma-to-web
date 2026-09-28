@@ -1,6 +1,7 @@
 ---
 name: break-reader
 description: Read where a Figma design breaks each line of text, at every breakpoint, and return the words per line as a table and JSON. Use during Stage 3 of the figma-to-web workflow, when filling the line-break table, or before Stage 5 row 6 when a build's line breaks need checking against the design. Returns measurements only, never a verdict.
+model: sonnet
 ---
 
 # Break reader
