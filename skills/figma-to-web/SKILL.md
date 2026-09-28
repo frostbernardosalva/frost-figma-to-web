@@ -113,11 +113,39 @@ design nobody has solved before.
 
 ### What is still unmeasured
 
+- **Scale. Every conversion so far has been a single page.** Four of them, across two targets, and
+  not one of them had a second page on the same site. What *should* carry over is the expensive
+  part: Stages 0–4 are per-project, not per-page, and the per-project state already persists in
+  `relationship-table.md` and the project `CLAUDE.md`. The measured version of that claim is the
+  HTML full page — **38 minutes against 6h 33m**, because the measuring already existed. Pages 2–5
+  ought to be much cheaper than page 1. Nobody has shown it. Four things are untested, and the
+  first is not a detail:
+
+  - **CMS and template pages.** Outside this note, the workflow mentions CMS exactly once — in
+    `targets/webflow.md`, saying CMS-referenced assets are out of scope for the asset audit. Collection pages, templates
+    and bound fields are not addressed anywhere. If a project has one, this workflow has nothing to
+    say about it yet.
+  - **Components and Symbols are never mentioned**, and the Webflow MCP's component tools are never
+    called. A header and footer built as page elements are fine on one page and are five copies to
+    maintain on five. The one real Webflow build did exactly that.
+  - **No cross-page reuse rule.** Stage 4 never says that page 2 must reuse page 1's classes.
+    Webflow classes are site-wide, so the untested path either reuses them or quietly mints a
+    near-duplicate — the class proliferation the prefix rule exists to prevent.
+  - **A token measured on page 1 may diverge on page 3.** The three-measurement gate spans
+    breakpoints, not pages. That is this workflow's own signature defect wearing different clothes:
+    right at desktop and wrong below becomes right on page 1 and wrong on page 3.
+
+  **Untested is not broken.** Do not read this as "multi-page fails" — read it as nobody knows. The
+  cheapest way to find out is one second page on a site that already has one.
 - **The direct-conversion control has never been run.** Nothing here shows the workflow beats a
   careful conversion *without* it. The evidence shows a seven-row gate beats a three-row gate, which
   is a much smaller claim.
-- **Speed.** The workflow deliberately front-loads measurement to remove rework. That trade has
-  never been timed on a complete project. Say so if asked.
+- **Speed, against a baseline.** The conversions themselves have now been timed, from the session
+  logs: **6h 33m** for a full page from scratch into Webflow, and **38m** to rebuild that measured
+  design on a second target. What is still missing is the comparison — nobody has timed the same
+  design converted the current way, a first pass then a manual refine. So the front-loading trade
+  remains unproven in either direction, and no speed claim is available. The figures and the method
+  are in `conversion-timings.html` in the evidence repo.
 - **Whether it survives a cold read.** Both projects were built by the same reader who wrote these
   rules. Nobody has yet run this file who did not also write it. `evals/` now tests exactly this —
   two cases, sandboxed, fresh config — but it **has not produced a score**: both need a shell, and

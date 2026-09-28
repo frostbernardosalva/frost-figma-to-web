@@ -247,6 +247,11 @@ one section that stacks the most text, where Figma's cap-trim differs from a bro
 That page also shipped **visibly wrong once**, passed every numeric row while doing it, and is the
 reason `--shot` exists. See below.
 
+**Every conversion so far has been a single page** — four of them, two targets, never a second page
+on the same site. The expensive stages are per-project rather than per-page, so pages 2–5 should be
+much cheaper than page 1, but nobody has shown it. Four things are untested at that scale, CMS and
+template pages first among them; `SKILL.md` names all four under *What is still unmeasured*.
+
 ### Two rules execute; the rest are instructions
 
 Most rules here are followed by being followed: a reader writes `rem` instead of `px` and the rule
