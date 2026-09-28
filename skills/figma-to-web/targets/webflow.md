@@ -250,6 +250,12 @@ The API refuses more than it documents. Known so far:
   one component's breakpoint rules missing while others are fine, plus an unchanged stylesheet
   hash across a publish. Remedy: re-issue the same writes, publish, confirm against the CSS.
 
+- **Positioning is not writable through `data_style_tool` either.** `position`, `right`, `bottom`,
+  `z-index` and `pointer-events` are accepted, appear in the read-back, and never reach the
+  published CSS — same failure shape as `box-shadow`. To overlay an element without them, use
+  `width: fit-content` + `margin-left: auto` + a negative `margin-top` equal to its own height.
+  **Keep a running list of non-writable properties**; rediscovering each one costs a publish cycle.
+
 - **`box-shadow` cannot be written through `data_style_tool`.** Passing
   `inset 0 -1px 0 0 var(--token)` is accepted, and the style reads back with `box-shadow` bound to
   the variable — but the geometry is gone and the published page computes `box-shadow: none`. The

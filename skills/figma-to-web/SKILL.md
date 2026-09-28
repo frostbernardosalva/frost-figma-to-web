@@ -676,6 +676,15 @@ It has already been run and passed a build that was visibly wrong. Two rules, bo
 - **Re-measure after swapping a styled `div` for a real control.** `<input>` and `<select>` do not
   inherit the width a `div` took by default. That is precisely how the 191px field shipped.
 
+#### Count the elements before you measure them
+
+A gate built on `querySelector` reads the **first** match and is blind to duplicates. On a real
+build an insert ran twice, the page carried two stacked navigation bars, and every dimension check
+passed — because the first one was correct.
+
+**Assert `querySelectorAll(sel).length` for each page-invariant block before reading any
+dimension.** A correct measurement of the wrong number of elements is not a pass.
+
 #### Reading the tool back is not verification
 
 On at least one target a style write **succeeds, stores, reads back correctly, and never reaches
