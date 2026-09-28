@@ -567,6 +567,34 @@ writes and 71 mode writes instead of 240.
 **A correct rem conversion changes nothing.** At a 16px root the numbers are identical — every
 section height, every content width, the page total. If the page moves, the conversion is wrong.
 
+### Checking the units on a live site, not a local build
+
+`verify.py` takes local paths only. **Save the published page and gate the copy** — its stylesheet
+links are absolute, so Chrome fetches the real CSS and rows 0-5 are meaningful:
+
+```
+curl -sL -o page.html https://<site>/<page>
+python bin/verify.py page.html --width 1440     # then 980, then 480
+```
+
+**Row 6 cannot go green on a shared-stylesheet target, and that is not a defect in your build.**
+Webflow serves one stylesheet per site: its own base CSS (`body`, `.w-button`, `.w-webflow-badge`)
+plus **every design system on that site**. Measured on the Mynt build — 250 px hits at all three
+widths, **zero of them in the page's own classes**, and the count identical at every width because
+it is static. The gate's sample is capped at 25, so the sample alone proves nothing either way.
+
+So on these targets, read rows 0-5 from the gate and check units by **prefix**, exhaustively:
+
+```
+curl -sL -o site.css <the stylesheet URL from the saved page>
+# then scan only the rules whose selector carries your prefix
+```
+
+Two things that look like bugs and are not. **CSSOM expands shorthands**, so a compiled
+`border-bottom: 2px solid …` arrives as `border-bottom-width` and is correctly exempt — a raw-text
+scan will flag it and be wrong. And the **CSS is readable cross-origin** on Webflow's CDN, so
+`unitAudit` is not silently skipping it; both were checked before being written down here.
+
 ## Class naming — Client-First
 
 **Every class follows Client-First.** Three types, and the type is readable from the name alone:

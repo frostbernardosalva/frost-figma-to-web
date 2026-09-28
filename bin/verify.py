@@ -2,7 +2,19 @@
 """Render a page headless at a real width and run the Stage 5 gate against it.
 
     python bin/verify.py dist/index.html --width 1440
-    python bin/verify.py https://example.com --width 480 --container ".fr_container"
+    python bin/verify.py dist/index.html --width 480 --container ".fr_container"
+
+    LOCAL PATHS ONLY. A remote URL is refused (see main()) because the gate has
+    to be injected beside the page, which a file:// harness can do and a remote
+    origin cannot. To gate a LIVE site — a Webflow build, say — save the page
+    first and point this at the copy:
+
+        curl -sL -o page.html https://example.com/some-page
+        python bin/verify.py page.html --width 1440
+
+    The saved HTML still references its real stylesheets by absolute URL, so
+    headless Chrome fetches them and the gate sees the true cascade. Measured
+    on a Webflow build: 809 CSS rules read, rows 0-5 meaningful.
 
 WHY HEADLESS AND NOT THE BROWSER EXTENSION
 
@@ -218,8 +230,11 @@ def main() -> int:
             url = temp_page.as_uri()
         else:
             sys.stderr.write(
-                "verify: remote URLs need the gate injected by the browser tool, not this runner.\n"
-                "        Use a local build, or evaluate bin/gate.js in the page directly.\n"
+                "verify: remote URLs need the gate injected beside the page, which this\n"
+                "        runner can only do for a local file. Save the page and gate the copy:\n"
+                f"            curl -sL -o page.html {url}\n"
+                "            python bin/verify.py page.html --width 1440\n"
+                "        Its stylesheet links stay absolute, so the real CSS is still fetched.\n"
             )
             return 1
 
