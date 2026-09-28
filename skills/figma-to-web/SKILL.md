@@ -554,6 +554,19 @@ Two knock-on effects to handle in the same pass:
   height. Anything absolutely positioned against that section and anchored to its *bottom* moves
   with the footer.
 
+### A Figma border does not add height; a CSS border does
+
+Figma strokes are drawn **inside** the box, so a 59px frame with a bottom border is 59px tall. CSS
+`border-bottom` adds to the box. A section with a hairline and a field with a hairline therefore
+builds **2px taller than the design**, at every breakpoint, and it looks like a rounding error
+rather than a defect.
+
+`box-shadow: inset 0 -1px 0` is the faithful equivalent — but see `targets/webflow.md`: that target
+cannot write it. **Give the element its designed height instead** and let the border sit inside the
+box. On a fixed-height section this is what the Stage 3 height rule already asks for, so the fix
+costs nothing. Measured: a search row 1.6px out at all three widths, exact once the heights were
+set.
+
 ## Units — rem everywhere, em for letter-spacing
 
 Every measurement is **rem** (÷16 from the design's px). `letter-spacing` is **em**, so it tracks the

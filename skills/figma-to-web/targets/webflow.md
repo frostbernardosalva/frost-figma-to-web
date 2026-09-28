@@ -239,6 +239,10 @@ The API refuses more than it documents. Known so far:
 - **IX3 interactions may be stored but never published.** Authored through
   `data_interactions_tool`, accepted, and listed as visible on the page — yet absent from the
   published HTML, which carried zero `data-w-id`. Scroll-state toggling fell back to a paste.
+- **`box-shadow` cannot be written through `data_style_tool`.** Passing
+  `inset 0 -1px 0 0 var(--token)` is accepted, and the style reads back with `box-shadow` bound to
+  the variable — but the geometry is gone and the published page computes `box-shadow: none`. The
+  API keeps the colour and discards the rest. Verified on a live build.
 - **No write path for page custom code** at all — `update_page_settings` covers SEO, Open Graph,
   slug and JSON-LD only, and its `draft` flag is silently dropped.
 
