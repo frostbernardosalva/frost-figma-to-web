@@ -676,6 +676,15 @@ It has already been run and passed a build that was visibly wrong. Two rules, bo
 - **Re-measure after swapping a styled `div` for a real control.** `<input>` and `<select>` do not
   inherit the width a `div` took by default. That is precisely how the 191px field shipped.
 
+#### Reading the tool back is not verification
+
+On at least one target a style write **succeeds, stores, reads back correctly, and never reaches
+the published CSS** — see `targets/webflow.md`. Two publishes went by with the stylesheet hash
+unchanged before it was caught, and it was caught by *measuring the render*, not by asking the API.
+
+So when a builder tool offers a read-back, treat it as a check that you sent what you meant to
+send — never as evidence the page has it. **The gate runs against the published page.**
+
 #### Three things only row 7 can see
 
 A later build passed rows 1-6 at four widths with **six of seven sections exact** and was wrong in

@@ -239,6 +239,17 @@ The API refuses more than it documents. Known so far:
 - **IX3 interactions may be stored but never published.** Authored through
   `data_interactions_tool`, accepted, and listed as visible on the page — yet absent from the
   published HTML, which carried zero `data-w-id`. Scroll-state toggling fell back to a paste.
+- **A style write can succeed, be stored, and never reach the published CSS.** Writing breakpoint
+  rules returned success; `query_styles` read them back correctly; two publishes later the
+  stylesheet contained none of them and its hash had not changed — while other components' rules
+  from the same session published fine. Re-issuing the identical writes produced a new hash and
+  the correct CSS. **Reproduced twice in one session.**
+
+  The consequence is bigger than the bug: **API read-back is not verification on this target.**
+  A style is not built until it is present in the published CSS or visible in a render. Symptom:
+  one component's breakpoint rules missing while others are fine, plus an unchanged stylesheet
+  hash across a publish. Remedy: re-issue the same writes, publish, confirm against the CSS.
+
 - **`box-shadow` cannot be written through `data_style_tool`.** Passing
   `inset 0 -1px 0 0 var(--token)` is accepted, and the style reads back with `box-shadow` bound to
   the variable — but the geometry is gone and the published page computes `box-shadow: none`. The
