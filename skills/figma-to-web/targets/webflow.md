@@ -224,6 +224,69 @@ id — the one case where the "stray unprefixed global" is deliberate rather tha
 
 `backdrop-filter` is accepted by `update_style`, and Webflow adds the `-webkit-` prefix itself.
 
+## A combo must be registered against the exact class chain the element wears
+
+`create_style` with `parent_style_names` builds the combo against **the chain you name**, and
+Webflow rejects it — *"One or more styles not found"* — if no element wears that exact chain. A
+modifier scoped to `["mt_badge"]` will not attach to an element wearing `mt_badge mt_badge-generic`.
+
+Read the element's `styleNames` first and pass the whole chain. The order matters too: it is the
+chain, not a set.
+
+## Component variants enlist an element only via its FIRST class
+
+`set_variant_styles` publishes exactly the rule you ask for:
+
+```css
+.the_class:where(.w-variant-<variant-id>) { background-color: …; }
+```
+
+**Webflow adds the `w-variant-<id>` class to an element only when the variant styles the class that
+element wears FIRST.** Style a second or later class and the rule publishes and matches nothing.
+
+| Element wears | Variant styles | Enlisted? |
+|---|---|---|
+| `nav` | `nav` | **yes** |
+| `nav_link nav_link-active` | `nav_link` (first) | **yes** |
+| `section hero` | `hero` (second) | **no** |
+| `container hero_content` | `hero_content` (second) | **no** |
+
+**The fix is not a workaround — style the first class too.** Any property on the first class enlists
+the element, and the rules already written against later classes start matching by themselves.
+Webflow inserts the class directly after the first one, which is how you confirm it:
+
+```html
+<div class="section w-variant-877bbd96-… hero">
+```
+
+**Two escape routes that do not exist**, both tested rather than assumed:
+
+- **A component instance root cannot take a class.** `set_style` on the instance answers
+  *"This element doesn't support styles"*, so a combo class is not available.
+- **A base-breakpoint override does not enlist.** It is the class that decides, not the breakpoint.
+
+**Why this one is worth the space.** It passes every check short of the render: the write succeeds,
+the read-back returns the stored value, and the published CSS contains the rule. Only the element's
+class list disagrees, silently. On the project that found it, this shipped a themed band **still
+wearing the wrong background, with the new ink already applied to the text on top of it** — through
+a numeric gate that passed, because a theme changes no dimensions.
+
+Where the class API genuinely cannot reach — a descendant selector, say — Webflow does emit
+`data-wf--<component>--variant="<name>"` on the instance root, which is a reliable hook for custom
+code and cannot match an instance still on its base variant.
+
+## Regrouping across breakpoints: `display: contents`
+
+Webflow cannot re-parent an element per breakpoint, and it has no descendant selectors, so a block
+whose three breakpoints are three different *groupings* — not one layout reflowing — looks like it
+needs its markup duplicated.
+
+It usually does not. **`display: contents` on a wrapper removes that wrapper's box while keeping its
+children**, so one markup can produce several groupings by switching wrappers between `contents` and
+`flex` per breakpoint. No duplicated elements, no second component, and nothing to keep in sync.
+
+Reach for this before shipping an element twice and hiding one copy.
+
 ## The cascade: source order decides, and source order is creation order
 
 **Webflow emits every base rule before every media query.** Two selectors of equal specificity are

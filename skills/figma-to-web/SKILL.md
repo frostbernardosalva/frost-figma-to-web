@@ -134,9 +134,20 @@ except rendering at the right state **and** the right width.
   not one of them had a second page on the same site. What *should* carry over is the expensive
   part: Stages 0–4 are per-project, not per-page, and the per-project state already persists in
   `relationship-table.md` and the project `CLAUDE.md`. The measured version of that claim is the
-  HTML full page — **38 minutes against 6h 33m**, because the measuring already existed. Pages 2–5
-  ought to be much cheaper than page 1. Nobody has shown it. Four things are untested, and the
-  first is not a detail:
+  HTML full page — **38 minutes against 6h 33m**, because the measuring already existed.
+
+  **Two pages on one site have now been timed, and the result is not the one that was hoped for.**
+  Page 1 took **28m**; page 2 took **1h 42m** — nearly four times longer, *with more reuse*, not
+  less. What actually carried over carried over completely: a page shell of registered components
+  delivered five of seven blocks already correct and already gated, and **building page 2 took ten
+  minutes**. Everything after that was verification, and verification scales with **content**, not
+  with how much was reused. Page 2 was twelve accordion entries of dense legal copy with nested
+  lists; page 1 was five table rows and a search field.
+
+  **So restate the claim rather than repeating it: reuse makes the _build_ cheap, and says nothing
+  about the page.** On these two runs the build was under a fifth of the total. Anyone promising a
+  per-page figure from a component library alone is quoting the ten minutes and not the hour and a
+  half. Four things remain untested, and the first is not a detail:
 
   - **CMS and template pages.** Outside this note, the workflow mentions CMS exactly once — in
     `targets/webflow.md`, saying CMS-referenced assets are out of scope for the asset audit. Collection pages, templates
@@ -163,6 +174,11 @@ except rendering at the right state **and** the right width.
   design converted the current way, a first pass then a manual refine. So the front-loading trade
   remains unproven in either direction, and no speed claim is available. The figures and the method
   are in `conversion-timings.html` in the evidence repo.
+
+  **Per-page timing is now recorded as it happens** rather than reconstructed afterwards —
+  `bin/timer.py`, started at Stage 5, writing a per-project ledger. Two pages in, the phase that
+  most wants driving to zero is already visible, and it is not the build: it is **rework**, the
+  time spent after a page was reported done. One of the two runs carries 36 minutes of it.
 - **Whether it survives a cold read.** Both projects were built by the same reader who wrote these
   rules. Nobody has yet run this file who did not also write it. `evals/` now tests exactly this —
   two cases, sandboxed, fresh config — but it **has not produced a score**: both need a shell, and
@@ -707,6 +723,26 @@ warns of it, **query a utility back after creating it.**
 
 ## Stage 5 — Build section by section, gated
 
+**Start the clock before the first write**, and keep the phases honest:
+
+```
+python bin/timer.py start "<page>"     # opens 'prep'
+python bin/timer.py mark build         # creating the page and its content
+python bin/timer.py mark gate          # measuring, and fixing what that finds
+python bin/timer.py mark row7          # the visual pass
+python bin/timer.py stop --publishes N --dev "1440 +0.26%, 980 +1.35%"
+```
+
+**Why this is a step and not a nicety.** "Pages 2-5 ought to be cheaper than page 1" is the claim
+this whole workflow is built on, and for four projects nobody had a number for it. The first two
+pages that were timed came out **28m and 1h42m** — and the breakdown was the surprise, not the
+totals: **building the pages was under a fifth of the time.** Everything else was proving them
+right, and on one of them, 36 minutes of that was rework after the page had already been called
+done. You cannot aim at any of that without measuring it.
+
+`stop` prints a warning for a run with no `row7` phase, no publish count or no recorded deviation,
+because a duration with no result attached is a number nobody can use.
+
 **Gate: a section is not done until every row passes. No next section until it does.**
 
 | # | Check | Catches |
@@ -746,6 +782,29 @@ It has already been run and passed a build that was visibly wrong. Two rules, bo
   against its Figma node at full size, or the row is decorative.
 - **Re-measure after swapping a styled `div` for a real control.** `<input>` and `<select>` do not
   inherit the width a `div` took by default. That is precisely how the 191px field shipped.
+
+#### A crop of one component is not row 7 for a page
+
+The trap is subtler than faking the row: you genuinely run it, on the thing you were working on,
+and report the **page** as gated.
+
+On a twelve-section content page, row 7 was run against three crops of the accordion lists that had
+just been fixed. It passed, correctly. Shipped in the same build: a navigation bar on the wrong
+theme, a hero band still the old colour with the new ink already applied on top of it, and a footer
+breadcrumb still carrying the previous page's text. A hero crop had even been taken and never
+opened. The reviewer saw all three in seconds.
+
+**A theme changes no dimensions, so no numeric row can ever catch one.** Row 7 is the only check
+that can, and a crop of the component you were editing has no path to failing on the rest of the
+page — `mistakes.md` shape 2.
+
+**So the page-level pass is its own step, not a by-product of the section you were building:**
+
+- Render the **whole page** at every gated width and open it. Not a crop, not a thumbnail.
+- Name each page-level block out loud — navigation, hero, footer, back-to-top — and compare each
+  against **its own** design node, not against your memory of it.
+- Do this after the last edit, however small. The block you did not touch is exactly the one that
+  is still wrong.
 
 #### Count the elements before you measure them
 
@@ -816,6 +875,48 @@ Every value inside such a section still measures correct, which is exactly why t
 value audit.
 
 ### Text line-break fidelity
+
+### A Figma text node is one string; your HTML is blocks. Three things go missing in the gap
+
+Figma stores a whole body of copy — headings, blank lines, lists and all — as **one text node with
+newlines**. Good HTML splits that into `<p>`, `<ul>`, `<ol>` and `<li>`. The split is right, and it
+loses three things that each cost a wrapped line. On a long content page those lines are the whole
+deviation.
+
+**1 · A trailing `<br>` before a block's end renders no line box.** In the text node a trailing
+newline is a real blank line. As the last child of a `<p>` or `<li>`, every browser drops it. One
+accordion entry came out **three lines short** at every width, with the `<br>` present in the
+markup, the CSS correct and the DOM correct. Restore the blank line explicitly — a `margin-bottom`
+of exactly one line-height — rather than trusting the `<br>`.
+
+**2 · The platform's own base stylesheet spaces your blocks.** Webflow puts `margin-bottom: 10px`
+on `p`, `ul` and `ol`. The design almost certainly spaces its paragraphs with blank lines instead.
+Zero the defaults, then put back what the design actually draws.
+
+**3 · List markers are PER LIST, and the marker size is sometimes literally zero.** The export
+writes every item as
+
+```
+li { margin-inline-start: calc(var(--list-marker-font-size, 0) * 1.5 * depth) }
+```
+
+**That `0` fallback is not a placeholder for a value you should supply — on some lists it is the
+value.** Those lists draw **no marker and no indent**: the text sits flush at the column edge and
+runs the full measure. Other lists in the same document draw their marker normally with an indent.
+One rule applied to all of them is wrong in one direction or the other.
+
+**Settle it from the render, by measuring pixels, not by eye.** Screenshot the node, find the
+left-most dark pixel per line, and compare a paragraph line against a list line:
+
+| | marker x | text x | verdict |
+|---|---|---|---|
+| paragraph | — | 9 | the column edge |
+| flush list | none | 9 | no marker, full measure |
+| marked list | 11 | 36 | marker drawn, 27px indent |
+
+A wrong indent costs a line on every list that wraps, in whichever direction, and a stray browser
+marker on a list the design draws bare renders as a clipped full stop that **no numeric row can
+see**.
 
 ### Reading the break before fixing it
 
@@ -1000,3 +1101,5 @@ asking.
 - `bin/gate.js` — the Stage 5 probes. Evaluate in the page under test.
 - `bin/verify.py` — render a page headless at a given width and run the gate.
 - `bin/fixtures/run.py` — the probes' own regression suite.
+- `bin/timer.py` — Stage 5. How long the conversion took, by phase. The ledger it writes
+  belongs in the project, not here.

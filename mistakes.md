@@ -75,6 +75,8 @@ defect present. This is the most dangerous shape, because it produces a confiden
 | Row 4 compared `textContent` strings, not rendered lines. Two words ran together at 980 and 480 and stayed live. The inverse also happened — geometry correct, `textContent` reading `Phone:+63…` | Frost landing | Assert **which words end each line**, and diff the copy character by character | `SKILL.md` Stage 5 row 4/6 |
 | `unitAudit` **cannot see the mistake it exists to catch.** It explicitly does not judge custom properties — and Webflow variables *are* custom properties. Only the class literals would ever have been flagged | Mynt | On a target whose variables compile to custom properties, check units by reading the collection back per mode | — |
 | Row 6 **cannot go green at all** on a shared stylesheet. Webflow serves every design system on the site in one file: 250 px hits, none in the page's own classes | Mynt | Check units by prefix against the published CSS, not by the row | `SKILL.md` "Checking the units on a live site" |
+| **"Row 7 was run" — on three crops of one component.** A 12-item content page was screenshotted at its accordion lists, compared, and reported as gated. The **navbar was the wrong theme, the hero band was still the wrong colour with the new ink already on it, and the footer breadcrumb still read the previous page's text**. A hero crop had been taken and never opened. The user saw all three in seconds | Mynt | **A crop of one component is not row 7 for a page.** Open a whole-page render at every width and name each page-level block — nav, hero, footer — against its own design node. A theme changes no dimensions, so no numeric row can ever catch it | `SKILL.md` "Row 7 is the one that gets faked" |
+| **The page total passed because the errors cancelled.** A 12-item content page measured **+0.22 % — inside a tolerance pre-registered before the build.** Three items were a line too long, one was three lines too short, and the sums nearly annulled each other. Fixing the real defects made the headline number **worse** before it got better | Mynt | On a content-driven page a page total is a weak gate. **Pull per-item targets out of the frame metadata and compare item by item** — one call per width, and every deviation then resolves to a whole number of lines | `SKILL.md` Stage 5 |
 | **No row checks which font face resolved.** `font-weight: 400` was requested everywhere and only 500 and 700 were loaded, so every "Regular" run rendered Medium — on both builds. Every recorded measurement came from a Medium-rendered page | HTML target | Assert the resolved face, not that the family is available. `document.fonts.check()` answers the wrong question | — |
 
 ---
@@ -186,6 +188,21 @@ share one bare modifier across blocks and watch it work on the first and fail si
 Both now have their own section, with the reason.
 
 ---
+
+
+**2026-09-30, Mynt page two.** Four findings, three of them platform or format facts and one
+methodological:
+
+| Finding | Where it went |
+|---|---|
+| A component variant cannot enlist an element it never had. The rule publishes; the `w-variant-` class is never added; nothing matches | `targets/webflow.md` |
+| A combo must be registered against the **exact** class chain the element wears | `targets/webflow.md` |
+| `display: contents` regroups markup across breakpoints without duplicating elements | `targets/webflow.md` |
+| A Figma text node is one string and your HTML is blocks: trailing `<br>` renders nothing, the platform's base CSS spaces your blocks, and list markers are per-list with a marker size that is sometimes literally zero | `SKILL.md`, under text line-break fidelity |
+| **Errors that cancel** — the row above | this file, shape 2 |
+| A variant enlists an element only via its **first** class — replacing an earlier, wrong version of this finding | `targets/webflow.md` |
+| A component instance root cannot take a class at all | `targets/webflow.md` |
+| **Row 7 run on crops of one component** — the row above | this file, shape 2 |
 
 ## What this file is not
 
