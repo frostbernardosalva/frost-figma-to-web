@@ -806,6 +806,53 @@ page — `mistakes.md` shape 2.
 - Do this after the last edit, however small. The block you did not touch is exactly the one that
   is still wrong.
 
+**And the qualifier that the next build learned the hard way: opening the render is necessary and
+not sufficient.** On the run after the one above, the tablet render *was* opened and called "reads
+correctly" — against expectation, with the design frame nowhere in view. What shipped was a table
+of contents built as a stacked list where the design makes it a **dropdown**. A stacked list of
+section names looks entirely plausible; only the design says otherwise.
+
+> **Row 7 is a comparison.** Without the design node in front of you it degenerates into a
+> plausibility check, and a plausibility check passes anything that is not visibly broken. Put the
+> two images side by side, literally.
+
+#### A block can change *kind* between breakpoints, and the child count is the tell
+
+Reflow changes a block's shape. Some blocks change what they **are**: a column of links at desktop
+becomes a trigger plus a panel below it; a row of cards becomes a carousel; a table becomes a
+stack of definition lists.
+
+**No height gate can see this**, because the two shapes can total the same, and row 7 will only
+catch it if you are comparing against the design rather than your expectation.
+
+**The cheap, mechanical tell is in the frame metadata: count the children at each width.** In the
+case above the desktop column listed **17** links and the tablet panel listed **16** — the missing
+one had moved into the trigger as the active item. Same content, different node count, is not a
+reflow; it is a different component.
+
+Do this at Stage 3 with the relationship table, where the frames are already open:
+
+```
+block            1440      980       480
+table-of-contents  17 links   1 + 16    1 + 16     <- changes kind, not size
+```
+
+#### Two silent-CSS traps worth knowing before they cost a build
+
+**An element-rect overflow probe and `scrollWidth > clientWidth` do not detect the same thing.**
+A probe that walks elements and compares their rects against the viewport will return **empty** on
+a real horizontal scroll, because the offending box can be correctly sized while its *text*
+overflows — `white-space: pre` and long unbroken strings both do this. Keep the `scrollWidth` check
+as the gate and treat the element walk as a **locator that is allowed to find nothing**.
+
+**Inserting an element changes the meaning of every positional selector aimed at that container.**
+Prepending a trigger into a list broke two live rules at once — both keyed on
+`.link:first-child` — because the new node became the first *child*. Neither errored, the CSS still
+published, and the only symptom was in the render. Prefer `:first-of-type` when what you mean is
+"the first element of this kind", and **re-check positional rules after any prepend or append**:
+the failure is silent in both directions, since a rule can stop matching or start matching the
+wrong node.
+
 #### Count the elements before you measure them
 
 A gate built on `querySelector` reads the **first** match and is blind to duplicates. On a real

@@ -102,6 +102,7 @@ def cmd_start(a, jpath, data):
     t = now(a.at)
     data["open"] = {
         "page": a.page,
+        "pages": a.pages,
         "started": t.strftime(FMT),
         "phases": [{"name": a.phase, "from": t.strftime(FMT)}],
         "paused": [],
@@ -174,7 +175,7 @@ def cmd_add(a, jpath, data):
     phases.append({"name": name, "from": cursor.strftime(FMT), "to": end.strftime(FMT)})
     data["runs"].append({
         "page": a.page, "started": start.strftime(FMT), "ended": end.strftime(FMT),
-        "phases": phases, "paused": [], "publishes": a.publishes,
+        "pages": a.pages, "phases": phases, "paused": [], "publishes": a.publishes,
         "deviation": a.dev, "note": a.note, "source": a.source,
     })
     data["runs"].sort(key=lambda r: r["started"])
@@ -271,18 +272,22 @@ def render(data):
         rows.append((r, tot, per))
         L.append(tot)
     w = max(len(r["page"]) for r, _, _ in rows) + 1
-    out = ["", f"{'Page'.ljust(w)} {'Date':<11} {'Total':>7}  {'build':>6} {'gate':>6} "
+    multi = any((r.get("pages") or 1) > 1 for r, _, _ in rows)
+    per_col = f" {'/page':>7} " if multi else ""
+    out = ["", f"{'Page'.ljust(w)} {'Date':<11} {'Total':>7}{per_col}  {'build':>6} {'gate':>6} "
                f"{'row7':>6} {'rework':>7}  {'pub':>4}  worst dev"]
-    out.append("-" * (w + 66))
+    out.append("-" * (w + 66 + len(per_col)))
     for r, tot, per in rows:
         tag = "" if r.get("source") == "measured" else "  ~"
+        n = r.get("pages") or 1
+        per_val = f" {hm(tot / n):>7} " if multi else ""
         out.append(
-            f"{r['page'].ljust(w)} {r['started'][:10]:<11} {hm(tot):>7}  "
+            f"{r['page'].ljust(w)} {r['started'][:10]:<11} {hm(tot):>7}{per_val}  "
             f"{hm(per.get('build')):>6} {hm(per.get('gate')):>6} "
             f"{hm(per.get('row7')):>6} {hm(per.get('rework')):>7}  "
             f"{str(r.get('publishes') or '-'):>4}  {r.get('deviation') or '-'}{tag}"
         )
-    out.append("-" * (w + 66))
+    out.append("-" * (w + 66 + len(per_col)))
     L.sort()
     med = L[len(L) // 2] if len(L) % 2 else (L[len(L) // 2 - 1] + L[len(L) // 2]) / 2
     out.append(f"{len(L)} conversion{'s' if len(L) > 1 else ''} · median {hm(med)} · fastest {hm(L[0])} · slowest {hm(L[-1])}")
@@ -337,6 +342,8 @@ def main():
     s = sub.add_parser("start", help="open a run")
     s.add_argument("page")
     s.add_argument("--phase", default="prep", help=f"opening phase (default prep; usual: {', '.join(PHASES)})")
+    s.add_argument("--pages", type=int, default=1,
+                   help="how many pages this run covers - >1 for a parallel run, so the report can divide")
     s.add_argument("--at", help="override the time, e.g. 14:05")
     s.set_defaults(fn=cmd_start)
 
@@ -367,6 +374,7 @@ def main():
     s.add_argument("--publishes", type=int)
     s.add_argument("--dev")
     s.add_argument("--note")
+    s.add_argument("--pages", type=int, default=1)
     s.add_argument("--source", default="reconstructed", choices=["measured", "reconstructed"])
     s.set_defaults(fn=cmd_add)
 
