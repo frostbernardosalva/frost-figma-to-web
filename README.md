@@ -189,6 +189,7 @@ first.
 
 ```
 rule-classification.md              every rule labelled browser-truth or platform-scar
+mistakes.md                         every mistake by the shape it takes, and where its guard went
 agents/
   break-reader.md                   reads the DESIGN's line breaks. Returns a table, never a verdict
   frame-measurer.md                 measures ONE breakpoint frame. Stage 3 runs them concurrently
@@ -221,7 +222,7 @@ skills/figma-to-web/
   templates/
     relationship-table.md           Stage 3, with a worked example
     annotation-spec.md              Stage 1 — behaviour, states, identity, deliberate-vs-drift
-    CLAUDE.md                       per-project facts and the deviation log
+    CLAUDE.md                       per-project facts, the file list and the deviation log
 ```
 
 ### Two targets, one set of stages

@@ -50,6 +50,12 @@ The distinction matters because scars do not announce themselves. "Never build a
 | Refuse to proceed without three distinct frames at three widths | `SKILL.md` Stage 0 | Measuring one frame thrice makes everything look non-responsive |
 | Two styling systems on two breakpoint maps will disagree | `SKILL.md` Stage 6 | The *principle*. Its Webflow mechanics are a scar — see below |
 | A check that shares the build's assumption confirms it | `SKILL.md` Status | The lesson from four probe bugs |
+| A Figma border does not add height; a CSS border does | `SKILL.md` layout contract | Figma strokes are drawn inside the box; CSS borders add to it. Both renderers, stated |
+| Paint a rule as a 1px gradient where there is no padding to take it out of | `SKILL.md` layout contract | A background layer is painted inside the box and adds nothing. CSS behaviour |
+| `flex-basis: 0` is a content-box size, so unequal padding splits a row unevenly | `SKILL.md` layout contract | Flex resolution under `box-sizing: border-box`. Measured 606/634 where 620/620 was expected |
+| Count the elements before you measure them | `SKILL.md` Stage 5 | A correct measurement of the wrong number of elements is not a pass |
+| Findings are a numbered file, opened at Stage 0 and added to until the build ends | `SKILL.md` Stage 0 | A gap in a sequence is visible where a missing paragraph is not |
+| Every finding gets a disposition before the project closes | `SKILL.md` Stage 7 | A finding that stays in the project is a lesson the next project pays for again |
 
 ## Scars — Webflow only
 
@@ -80,6 +86,12 @@ The distinction matters because scars do not announce themselves. "Never build a
 | Prefer page-level custom code over site-wide | **Nothing.** Scope is whatever you author |
 | Webflow lazy-loads images by default (`loading="lazy"`) | **Partially relaxes.** Still set it deliberately; `gate.js` already treats *not loaded* as not a verdict |
 | Breakpoint ladder `xxl/xl/large/main/medium/small/tiny` | **Relaxes, and improves.** Choose breakpoints from the design's own frames. The Frost build had to map 1920→`xxl`, 1440→`main`, and leave `large`/`xl` unused |
+| Positioning (`position`/`right`/`bottom`/`z-index`/`pointer-events`) is accepted and never published | **Nothing.** You write the CSS |
+| All base rules are emitted before all media queries, so source order — i.e. creation order — decides between tied selectors | **Nothing.** You control the order of your own stylesheet |
+| A reused modifier loses to any base class created after it; scope it with `parent_style_names` | **Relaxes.** Specificity behaves normally when you write the selector |
+| Removing an element leaves its classes behind, and the rebuild appends `-1` | **Nothing.** Deleting a rule deletes it |
+| The builder will not place a freshly created asset in an `<img>`; it skips the element silently | **Nothing.** You write the `<img>` |
+| A text input cannot exist outside a form | **Nothing.** You write the markup |
 
 ## Mixed — split, do not move whole
 
@@ -90,12 +102,17 @@ The distinction matters because scars do not announce themselves. "Never build a
 | `## Class naming — Client-First` | The three-type convention (custom / utility / `is-` modifier) | Underscore→folder, the BEM argument, reserved names |
 | `## Image metadata` | Descriptive vs explicitly-decorative alt, set at both levels | `altText` as a setting; `set_attributes` failing |
 | `references/custom-code.md` | `document.fonts.ready`; the parallel-layer principle | The other five sections |
+| **Reading the tool back is not verification** | Verify the published output, not the authoring store | The specific failure — a style write stored, returned by the read-back, absent from the published CSS |
 
 ---
 
 ## Count
 
-**33 truths · 26 scars · 5 mixed.** The scars are almost entirely in `references/webflow-mcp.md`
+**38 truths · 31 scars · 6 mixed.**
+
+*Corrected 30 Sep 2026.* The previous figure read 33 · 26 · 5 against 32 · 25 · 5 rows — off
+by one on two of the three tables, and wrong from before this edit. Counted from the tables
+rather than carried forward, which is the only way it stays true. The scars are almost entirely in `references/webflow-mcp.md`
 (185 lines, 95% Webflow — only its 5-line "Figma read tools" section is portable) and
 `references/custom-code.md` (86 lines, of which 2 sections are truths).
 

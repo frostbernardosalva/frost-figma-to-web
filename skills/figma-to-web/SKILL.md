@@ -29,9 +29,9 @@ It had two causes, and the first is the one people miss:
 **Neither cause is fixed by annotating, renaming or tidying the Figma file.** The design stated
 those values correctly. Do not reach for file cleanup to solve this.
 
-## Status: two projects, one claim proven
+## Status: five projects, one claim proven
 
-Derived from **two projects** and measured properly once. The platform facts in `references/`
+Derived from **five projects** and measured properly once. The platform facts in `references/`
 describe the browser, Figma and the image encoders, and are safe to rely on. Everything else below is the evidence,
 stated plainly, including what it does not cover.
 
@@ -110,6 +110,23 @@ touching anything.
 **This is one section, on a design that had already been built once.** It shows the stages survive a
 change of target. It does not show the HTML target works on a full page, on behaviours, or on a
 design nobody has solved before.
+
+### What the fifth project established
+
+A design system built before any page: **116 variables, 23 components and 6 page-invariant blocks**,
+each gated at three widths, with no page converted yet. Two things came out of it.
+
+**Foundation-first is cheap where it matters.** Blocks built after the token layer and the
+section/container ladder existed cost **four classes and zero defects** (a hero band) and **five and
+zero** (a tab strip). The same navigation bar, built on an earlier attempt with no foundation,
+needed five row-7 fixes. The ordering claim is not proven against a control, but the cost difference
+inside one project is large and consistent.
+
+**The cascade findings are the durable part** — see `targets/webflow.md`, *The cascade: source order
+decides*. Two ways for a modifier to store, publish and do nothing, neither visible to any check
+except rendering at the right state **and** the right width.
+
+**Not shown:** that page two is cheaper than page one. No page has been converted on it.
 
 ### What is still unmeasured
 
@@ -192,12 +209,23 @@ the exact defect this workflow exists to prevent, reached backwards and with fal
 
 Then read all three frames. Report what exists, what is missing, and what is drift.
 
+**The report is a file, and its findings are numbered.** Write `audit.md` beside the project's
+`CLAUDE.md`, one finding per heading, numbered `F1`, `F2`, `F3`. The numbering is not decoration:
+findings are referred to by id for the rest of the project, they are how Stage 7 hands work back to
+this plugin, and a gap in the sequence is visible where a missing paragraph is not. Keep adding to
+the same file as later stages find things — the register runs to the end of the build, not to the
+end of Stage 0.
+
 Three traps, all of which have produced wrong conclusions before:
 
 - **Layer names may lie.** Blocks get pasted between projects and never renamed, so a layer can
   carry one project's names while rendering another's text. **Always read the rendered content
   before drawing a conclusion about content.** A finding was once escalated to Blocker on layer
   names alone and was simply wrong.
+- **Absence from a filtered list is not absence.** A component reported as "does not exist" was
+  missing only from the *published* component list; it exists in the file, carries a deprecation
+  note, and its instances are on every page of that type. Before concluding something is not there,
+  check that the source you read could have shown it.
 - **`get_metadata` gives structure, not style values.** Do not infer spacing or type from it.
 - **Raw x/y coordinates mislead** on rotated and auto-layout nodes. Two elements that looked like
   they overlapped by 36px were a 6px flex gap.
@@ -567,6 +595,42 @@ box. On a fixed-height section this is what the Stage 3 height rule already asks
 costs nothing. Measured: a search row 1.6px out at all three widths, exact once the heights were
 set.
 
+**Paint the rule as a 1px gradient when there is no padding to take it out of.** The fix above ran
+out five times on one build, and then hit a block it could not help: a section whose height is
+exactly two 163px rows with a rule above and below, and **no block padding at all** to absorb the
+2px. A background layer is painted *inside* the box and adds nothing to any dimension, which is
+precisely what a Figma inner stroke does:
+
+```css
+background-image: linear-gradient(#EBEDF4,#EBEDF4), linear-gradient(#EBEDF4,#EBEDF4);
+background-size: 100% 1px, 100% 1px;
+background-position: 0% 0%, 0% 100%;
+background-repeat: no-repeat, no-repeat;
+```
+
+Multi-layer `background-image`, `-size`, `-position` and `-repeat` all survive Webflow's style API
+and all reach the published CSS — checked. The same trick draws a column divider as a 1px vertical
+layer at `50%`, and a 2px active-tab underline that leaves the tab exactly as tall as an inactive
+one. **Build it once as a utility class** and use it for any rule on a box whose height or width is
+locked; keep real borders for boxes that are free to grow, where a border is simpler to read.
+Measured: a block exact at 1440 where every previous bordered block had been 2px over.
+
+### `flex-basis: 0` is a content-box size, so unequal padding splits a row unevenly
+
+Four cards, `flex: 1 0 0` with `min-width: 600px`, in a 1240px row. Expected 620 / 620.
+**Measured 606 / 634.**
+
+Under `box-sizing: border-box` a `flex-basis` of 0 sets the **content** box to zero, so each item's
+flex base size is its own padding. The cards did not have the same padding — the left card of each
+pair had `padding-left: 0` and the right had 28 — so the free space was split equally *on top of*
+28 and 56, and the difference survived into the final widths. `min-width` never fired, because both
+results cleared 600.
+
+**When equal columns must be exact and their padding differs, size them by percentage, not by
+`flex: 1`.** `flex-basis: 50%` resolves against the border box and splits exactly. This is invisible
+to every check except measuring the children: the block height, the total width, and the render at a
+glance were all correct.
+
 ## Units — rem everywhere, em for letter-spacing
 
 Every measurement is **rem** (÷16 from the design's px). `letter-spacing` is **em**, so it tracks the
@@ -880,10 +944,29 @@ where you are writing files anyway, there is only one layer and this costs nothi
 the API response — one platform accepted scroll interactions, listed them as present, and never
 emitted them. See `targets/<target>.md` before writing or pasting any snippet.
 
-## Stage 7 — Fidelity pass
+## Stage 7 — Fidelity pass, and flow the findings back
 
 Should now find little, because Stage 5 gated each section. If it finds a lot, the Stage 5 gate is
 not being applied — say so rather than silently absorbing the rework.
+
+**Then empty the findings file.** Every numbered finding in the project's `audit.md` gets a
+disposition, and the disposition is written down:
+
+| Disposition | Means |
+|---|---|
+| **landed** | the rule is now in `SKILL.md`, `references/` or `targets/<target>.md` — **name the file** |
+| **project-only** | true of this design or this client and nothing else — say why |
+| **open** | real, general, and not yet written anywhere. It stays visible until it is one of the other two |
+
+Sort each one with `../../rule-classification.md` first: a **truth** about browsers, CSS or Figma
+goes in `SKILL.md` or `references/`; a **scar** — a workaround for something the platform does —
+goes in `targets/<target>.md`, and the other target file says what replaces it. Add the row to
+`rule-classification.md` in the same edit, or that register falls behind the rules it indexes.
+
+**A finding that stays in the project is a lesson the next project pays for again.** Measured: on
+one build, nine findings from the last two days of work reached the project's audit file and two
+reached the plugin. The gap was invisible until it was tabulated. `../../mistakes.md` holds that
+table, and it is the artifact whose incompleteness makes this stage visible when it is skipped.
 
 ## Flag rather than fix
 
@@ -900,6 +983,9 @@ asking.
 - `templates/relationship-table.md` · `templates/annotation-spec.md` · `templates/CLAUDE.md`
 - `../../rule-classification.md` — every rule labelled *browser truth* or *platform scar*. Read it
   before carrying a rule to a new target, and before adding one.
+- `../../mistakes.md` — every mistake, grouped by the shape it takes, and where its guard went.
+  **Read it before trusting a check**, and fill it in at Stage 7. Its last column is the backlog of
+  lessons no project has been given yet.
 
 ## Tools
 

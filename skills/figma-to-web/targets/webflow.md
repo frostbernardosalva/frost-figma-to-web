@@ -90,6 +90,18 @@ should be). Style the FormForm element separately, by id, after the build. **Thi
 value item here**: it is the collapsed-form defect from the previous project, reached by a different
 route, and it will recur on every form built through this path.
 
+**A text input cannot exist outside a form.** The builder rejects it outright — *"Text Field can
+only be placed in a Form"* — so a lone field specimen has to be wrapped in a `FormForm` even when
+the design shows no form. That wrapper then takes the class you meant for the form, per the trap
+above.
+
+**Styling the real form takes two calls, not one.** `data_style_tool > create_style` to make the
+class, then `data_element_tool > set_style` with `style_names` on the `FormForm` element's id.
+Passing the class in the markup lands it on the wrapper every time.
+
+**The general shape is worth more than the instance: when a target silently inserts a wrapper, a
+correct measurement of the wrapper is not a measurement of the thing you meant.**
+
 ### `grid-row-gap` accepts variables; `row-gap` does not
 
 `row-gap` returns *"Property row-gap does not support setting a variable of type length"* and the
@@ -208,7 +220,59 @@ One `wf:class` action carries up to 20 targets, so a single action can add the m
 them at once. The modifier must also exist as a **standalone style block** for IX3 to address it by
 id — the one case where the "stray unprefixed global" is deliberate rather than a mistake.
 
+**Give each element its own combo, and understand why** — the section below is the reason.
+
 `backdrop-filter` is accepted by `update_style`, and Webflow adds the `-webkit-` prefix itself.
+
+## The cascade: source order decides, and source order is creation order
+
+**Webflow emits every base rule before every media query.** Two selectors of equal specificity are
+therefore settled by *when the class was created*, not by where you would expect the cascade to put
+them. Both failures below store correctly, read back correctly, publish, and do nothing. Neither is
+visible to any check except rendering at the right state **and** the right width.
+
+**A breakpoint override on a base class defeats a modifier that only sets the property at base.**
+`.box` sets `border-color` at `medium`; `.box-open` sets it at base. At 980 the media rule wins,
+because a media rule beats a base rule regardless of which class is "more specific" in intent — the
+two selectors are tied at one class each. An open dropdown lost its border below 992 this way.
+
+> **If a base class overrides a property at a breakpoint, every modifier that sets that same
+> property must override it at that breakpoint too.**
+
+**A shared modifier only works on blocks whose base class is older than it.** A modifier reused
+across blocks — `_field_box-focus` on both `_field_box` and `_sel_box` — is a single class competing
+with a single class. It wins on the base class that existed before it and loses on every block built
+afterwards. It works on the first block you built and silently fails on the rest.
+
+> **Scope a reused modifier as a combo.** `update_style` with
+> `parent_style_names: ["<base>"]` produces `.base.modifier` at (0,2,0), which beats any single
+> class whatever the order. One call per block that reuses the modifier.
+
+**A combo can only be created where an element already wears the chain.** Scoping a modifier to a
+class no element has yet paired it with fails with *"Style &lt;base&gt; > &lt;modifier&gt; not found"*. Build
+the element first, then scope.
+
+## Cleanup leaves the classes behind
+
+**Removing an element does not remove its classes, and the rebuild silently renames.** Delete a
+block's elements, rebuild it with the same markup, and the builder finds the old class names still
+occupied — so it creates `_btn_icon-1`, `_btn_icon-2` beside them. The build looks correct and every
+selector is subtly wrong.
+
+**Delete an element's classes before rebuilding it.** `remove_style`, then `rename_style` if a
+suffixed twin already exists. Standing check after any teardown-and-rebuild: grep the published CSS
+for `-[0-9]$` on your own prefix.
+
+## Assets upload without the Designer; the builder will not place them
+
+`create_asset` plus the S3 form post works headlessly and the asset is live and addressable. But
+`data_whtml_builder` refuses to place a freshly created asset in an `<img>` — it reports *"the image
+does not exist in asset library"* and **skips the element silently**, leaving the surrounding markup
+built and the image absent. On one build that dropped 44 `<img>` elements.
+
+**Reference the asset from CSS instead.** `background-image: url(<hostedUrl>)` with an explicit
+`background-size` and `background-repeat: no-repeat` is written by `data_style_tool` without
+complaint, and it collapses many elements into one class. 44 skipped images became 3 classes.
 
 ---
 

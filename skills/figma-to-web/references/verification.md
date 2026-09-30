@@ -118,6 +118,28 @@ Bold and regular glyphs on the same line have different rect tops. A per-charact
 on `top` will report an orphaned word that does not exist. Group by **vertical overlap** — a
 character belongs to the running line if its midpoint falls inside that line's band.
 
+## Never probe on a breakpoint edge
+
+Sampling at exactly the boundary pixel puts the result at the mercy of sub-pixel rounding. A probe
+run at **479** had `matchMedia('(max-width: 479px)')` return false: the page rendered *tablet*, the
+harness reported the tablet gutter against mobile expectations, and a container that was fine read
+as **collapsed to zero width with horizontal scroll**. At 470 and 440 the same page resolved
+correctly. Sample inside the band, never on its edge — and when a boundary value looks
+catastrophic, re-run 10px in before reporting it.
+
+## Confirm the capture before reporting a defect from a render
+
+A screenshot that comes back blank is more often the harness than the build, and it is the failure
+that looks most like a finished check.
+
+- **A hidden iframe photographs as a blank page.** Worse than no row 7, because it looks done. Make
+  the capture iframe visible.
+- **An iframe shorter than the page captures a viewport slice.** One section reported blank sat at
+  y=26212 inside a 26000px frame.
+
+Assert that the region you meant to capture is inside the image — by its measured offset, not by
+eye — before calling anything in it a defect.
+
 ## Do not compensate for the iframe scrollbar
 
 Padding the iframe width so `clientWidth` equals the design width pushes the **media** width past

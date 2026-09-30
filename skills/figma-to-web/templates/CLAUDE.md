@@ -11,6 +11,7 @@ through MCP, or files in this repo. Record which below, because most of this fil
 
 | File | What it is |
 |---|---|
+| `audit.md` | Numbered findings, `F1`, `F2`, `F3` — opened at Stage 0 and added to until the build ends. Every one gets a disposition at Stage 7 |
 | `annotation-spec.md` | What the design leaves unstated — Stage 1 |
 | `relationship-table.md` | Responsive relationships, every breakpoint frame — Stage 3 |
 | `custom-code/` | *Platform targets only.* Source of truth for anything pasted into the platform. **Not wired to anything** — editing a file here changes nothing until it is pasted and published. On a file target, delete this row: the repo *is* the source |
