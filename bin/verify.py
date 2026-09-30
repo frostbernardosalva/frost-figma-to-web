@@ -274,6 +274,14 @@ def main() -> int:
     if args.shot:
         print(f"  ROW 7 — render saved: {args.shot}")
         print("        Compare it against the Figma node before believing any row above.")
+    else:
+        # Silence is how row 7 gets skipped. A run that prints six rows and says
+        # nothing about the seventh reads as a complete run - that is exactly how
+        # a build shipped with 31 defects after "heights and widths matched".
+        # The exit code does not change: row 7 is a human comparison and a script
+        # cannot pass it. This only removes the silence.
+        print("  ROW 7 — NOT RUN. No render was produced; this gate is six rows deep.")
+        print("        Re-run with --shot <file.png> and compare it against the Figma node.")
     sec = data["page"].get("section")
     print(f"  {args.target}  @ {actual}px   content height {data['page']['height']}"
           + (f"   section {sec}" if sec is not None else ""))

@@ -56,6 +56,7 @@ The distinction matters because scars do not announce themselves. "Never build a
 | Count the elements before you measure them | `SKILL.md` Stage 5 | A correct measurement of the wrong number of elements is not a pass |
 | Findings are a numbered file, opened at Stage 0 and added to until the build ends | `SKILL.md` Stage 0 | A gap in a sequence is visible where a missing paragraph is not |
 | Every finding gets a disposition before the project closes | `SKILL.md` Stage 7 | A finding that stays in the project is a lesson the next project pays for again |
+| A step with no artifact is a step that gets skipped | `SKILL.md` Stage 7 · `../../mistakes.md` | Nothing about it is platform-specific. The omission has to leave a visible hole, or a deadline removes it |
 
 ## Scars — Webflow only
 
@@ -108,7 +109,7 @@ The distinction matters because scars do not announce themselves. "Never build a
 
 ## Count
 
-**38 truths · 31 scars · 6 mixed.**
+**39 truths · 31 scars · 6 mixed.**
 
 *Corrected 30 Sep 2026.* The previous figure read 33 · 26 · 5 against 32 · 25 · 5 rows — off
 by one on two of the three tables, and wrong from before this edit. Counted from the tables

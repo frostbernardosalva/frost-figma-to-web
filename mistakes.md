@@ -5,15 +5,19 @@
 add a rule, and at the end of a project.
 
 **Organised by failure mode, not by project.** A mistake is recognised by its shape long before it
-is recognised by its details, and the same six shapes have now produced every defect across four
+is recognised by its details, and the same seven shapes have now produced every defect across four
 conversions. The instances underneath each one are evidence, not a catalogue to memorise.
+
+**Six of the seven are a check failing. The seventh is a step that never ran**, and it is the one
+this whole plugin was designed around — see shape 7. The first version of this file had six, which
+is how a register of mistakes came to omit the mistake its own design exists to prevent.
 
 **The last column is the point.** An empty *Guard lives* cell is a lesson that has not been written
 down anywhere a future project will read it. Those cells are the backlog.
 
 ---
 
-## The six tests, short
+## The seven tests, short
 
 Ask these before believing a check, and again before writing a finding down.
 
@@ -25,9 +29,12 @@ Ask these before believing a check, and again before writing a finding down.
 | 4 | A conclusion wider than its source | Could this source show me the absence I am inferring? |
 | 5 | The target was stale | Did I measure the published thing, or the authoring store? |
 | 6 | The fix arrived after the checking stopped | Has the gate run *since* the last edit? |
+| 7 | **The step never ran** | What would be visibly missing if I skipped this? If nothing, it will get skipped |
 
-`SKILL.md` already carries the sentence all six descend from: **"A check that shares the build's
-assumption confirms it."** This file is that sentence with its evidence attached.
+`SKILL.md` already carries the sentence shapes 1–6 descend from: **"A check that shares the build's
+assumption confirms it."** Shape 7 descends from a different one, in the README: **"a teammate on a
+deadline skips steps nobody can see were skipped."** This file is those two sentences with their
+evidence attached.
 
 ---
 
@@ -132,6 +139,31 @@ already finished.
 | A section passed its gate. The row-7 fix then renamed its modifiers, which stranded three crop rules on the old global names — **three of five logos collapsed to 0 wide** and the section went from 592 to **480**, a 19–20 % shortfall at every width. Found only by the end-of-build audit | Frost landing | **Re-run the whole gate after every fix, not just after the build** | `SKILL.md` Stage 5 · `references/verification.md` |
 | A defect created **by** a verification conclusion: acting on the wrong badge reading set `display: none` at one breakpoint and pushed the element 8.35px outside the section, where `overflow: hidden` clipped it | Frost landing | A conclusion that changes the build is an edit, and re-triggers the gate | `SKILL.md` Stage 5 |
 | A finding was written up as **closed** while the render still showed it open | Mynt | Do not record a claim as closed without re-reading the render that decides it | `SKILL.md` Stage 7 (disposition) |
+
+---
+
+## 7 · The step never ran, and nothing showed its absence
+
+**Not a checking problem — a visibility problem, and it takes a different kind of guard.** Shapes 1
+to 6 are fixed by a better check. This one is fixed by making the omission *leave a hole*: an
+artifact that is visibly empty, a flag whose absence is announced, a number computed rather than
+carried forward. A better check cannot help, because the check is the thing that did not happen.
+
+This is the shape the plugin's own design targets — *"a rule in a file is advisory, and a teammate
+on a deadline skips steps nobody can see were skipped"* — and it is the one that has cost the most.
+
+| What happened | Project | Guard | Guard lives |
+|---|---|---|---|
+| **The project `CLAUDE.md` was never seeded from `templates/CLAUDE.md`, so the rem rule never reached the project and the entire variable collection was built in px.** Undoing it cost 33 base and 15 mode variable writes plus ~34 class literals. The rule was written down, classified, machine-checked — and it never arrived | Mynt | Stage 2 does not start until the project file exists and was copied from the template. The units line in it is the falsifier | `SKILL.md` Stage 2 |
+| **Six of seven gate rows run, success reported, and the page never looked at.** Heights and container widths matched, so the build was called done; row 7 then found **31 defects across seven sections**. `verify.py` printed six rows and produced no image, so a six-row run looked like a complete one | HTML target | `--shot` writes the render from the same command that prints the rows, and a run without it now says row 7 did not happen | `bin/verify.py` |
+| Deviation-log entries appended after the fact — *"(Found during section 6, recorded now.)"* — against a rule that says *"written as changes are made, not at audit time"* | Frost landing | Nothing enforces contemporaneity. A log is prose, and a missing entry has no signature until someone asks why a value differs | — |
+| Findings stayed in the project. Of the late findings on one build, **two of nine** reached the plugin, and nobody could see the gap until it was tabulated | Mynt | Every finding gets a disposition before the project closes, and the ledger below is where that is visible | `SKILL.md` Stage 7 |
+| `rule-classification.md` fell behind its own `SKILL.md` — four rules added across three commits, none classified — **and its stated total was wrong by one on two of three tables**, from before anyone noticed | plugin | Recount from the tables. Never increment a carried-forward number | `rule-classification.md` |
+
+**The last row is this failure happening inside the fix for this failure.** The count was wrong
+while the file was being edited to fix exactly this class of problem, and it surfaced only because
+the verification step recounted instead of trusting the stated figure. **Recompute, do not
+increment** — that is the whole of shape 7 in three words.
 
 ---
 

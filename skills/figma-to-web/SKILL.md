@@ -381,6 +381,13 @@ project owner's call to make, not yours.
 
 **Gate: no build starts while any of these is open.**
 
+- **The project `CLAUDE.md` exists, and was copied from `templates/CLAUDE.md`.** Not written from
+  scratch, not written from memory — **copied**, then filled in. The template carries rules the
+  project needs before its first write, and a file authored fresh silently drops all of them.
+  Measured: on one build this step was skipped, the template's units line never arrived, and **the
+  entire variable collection was created in px**. Undoing it cost 33 base and 15 mode variable
+  writes plus about 34 class literals. The rule existed, was classified, and was machine-checked;
+  it simply never reached the project. `mistakes.md` shape 7.
 - **The target.** `targets/webflow.md` or `targets/html.md`. This decides how Stage 4 delivers
   tokens, how Stage 5 writes, and which constraints apply at all — several rules in this file exist
   only to work around one platform, and `rule-classification.md` records which. **Read the target
