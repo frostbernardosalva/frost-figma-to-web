@@ -275,6 +275,29 @@ Where the class API genuinely cannot reach — a descendant selector, say — We
 `data-wf--<component>--variant="<name>"` on the instance root, which is a reliable hook for custom
 code and cannot match an instance still on its base variant.
 
+## A value you have only ever seen through a variant is not the base value
+
+A variant exists to *change* values, so reading a class's behaviour off a page that uses one tells
+you **the variant's** value, not the class's.
+
+On the project that found this, three consecutive pages used a "Light" hero variant, which flattens
+the label's line-height to 1. The base carries 1.4. The fourth page used the base, reused the same
+class, and came out **+5.59px** — exactly `14 × 0.4`.
+
+**Before reusing a class on a page that does not carry the variant, read the base rule** — or
+measure on a page that uses the base. The variant's own published rule states it plainly:
+
+```css
+.the_label:where(.w-variant-…) { line-height: var(--lh-flat); }
+```
+
+Anything listed there is a value you have *not* seen at base.
+
+**The same shape applies to platform resets.** Webflow's base stylesheet puts `margin-bottom: 10px`
+on every `<p>`. If each page carries its own reset in page CSS, the page that forgets it ships 10px
+under every paragraph, silently — and "remember to copy the reset" is a step nobody can see was
+skipped. Put it in **site-level** custom code once, where a new page inherits it by existing.
+
 ## Regrouping across breakpoints: `display: contents`
 
 Webflow cannot re-parent an element per breakpoint, and it has no descendant selectors, so a block
