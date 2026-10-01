@@ -153,18 +153,39 @@ except rendering at the right state **and** the right width.
     `targets/webflow.md`, saying CMS-referenced assets are out of scope for the asset audit. Collection pages, templates
     and bound fields are not addressed anywhere. If a project has one, this workflow has nothing to
     say about it yet.
-  - **Components and Symbols are never mentioned**, and the Webflow MCP's component tools are never
-    called. A header and footer built as page elements are fine on one page and are five copies to
-    maintain on five. The one real Webflow build did exactly that.
-  - **No cross-page reuse rule.** Stage 4 never says that page 2 must reuse page 1's classes.
-    Webflow classes are site-wide, so the untested path either reuses them or quietly mints a
-    near-duplicate — the class proliferation the prefix rule exists to prevent.
-  - **A token measured on page 1 may diverge on page 3.** The three-measurement gate spans
-    breakpoints, not pages. That is this workflow's own signature defect wearing different clothes:
-    right at desktop and wrong below becomes right on page 1 and wrong on page 3.
+  - ~~**Components and Symbols are never mentioned.**~~ **Closed.** Stage 4 now carries the
+    component layer and the page shell, and `targets/webflow.md` carries the variant, prop and
+    instance-root behaviour. Six components with variants and props were registered on the project
+    that closed it.
+  - ~~**No cross-page reuse rule.**~~ **Closed.** Stage 5 now says to check what exists first and
+    reuse it with a modifier at roughly 80–90 % — and, just as importantly, never by editing the
+    borrowed class.
+  - ~~**A token measured on page 1 may diverge on page 3.**~~ **Closed, and it happened.** See
+    *What page-level divergence actually looks like* below.
 
   **Untested is not broken.** Do not read this as "multi-page fails" — read it as nobody knows. The
   cheapest way to find out is one second page on a site that already has one.
+
+  **What page-level divergence actually looks like.** This workflow predicted that a token measured
+  on page 1 may diverge on page 3, as its own signature defect wearing different clothes. Across
+  **five pages on one site it happened four times**:
+
+  | Token | Divergence |
+  |---|---|
+  | the hero display size | **64** on the page it was derived from, **58** on the three built after |
+  | the lead paragraph role | **did not exist** — three pages in, a page needed it and it had to be created |
+  | the logo subtitle size | **10** on two pages, **12** on a third |
+  | Body L in a note block | **18 → 16 below 992**, and as a *role change*, not a step within one role |
+
+  **The guard: when a second page disagrees with a token, the question is which page is wrong — not
+  which value to bend the token to.** Three of four of those were resolved by binding the new page
+  to a *different existing role*, not by editing the shared token. The one real addition was a role
+  that genuinely did not exist. Bending a shared token to satisfy one page is how a design system
+  stops describing the design.
+
+  **And the divergence is invisible at one width on one page.** Two of the four were correct at
+  desktop and wrong below it; one was correct on every page that used a particular component
+  variant and wrong on the first page that used the base.
 - **The direct-conversion control has never been run.** Nothing here shows the workflow beats a
   careful conversion *without* it. The evidence shows a seven-row gate beats a three-row gate, which
   is a much smaller claim.
@@ -508,6 +529,48 @@ before you treat a row as complete.
 **Read `targets/<target>.md` before the first write.** It is the difference between a clean build
 and a day spent on silently dropped styles.
 
+### Tokens are half of Stage 4. The other half is the component layer.
+
+**On a multi-page project, nothing is converted until the foundation and the components exist.**
+The order is fixed:
+
+```
+tokens + the layout ladder   →   components   →   a page shell   →   pages
+```
+
+**Why the order, with the cost of getting it wrong.** Blocks built *after* the token layer and the
+section/container ladder existed cost **four classes and zero defects** (a hero band) and **five and
+zero** (a tab strip). The same navigation bar, built on an earlier attempt with no foundation,
+needed **five row-7 fixes**. On a later project the first attempt converted pages before there was a
+system and produced **73 component classes and zero reusable type or container roles**, with the
+container ladder written into three separate classes — each declaring its own `max-width` — because
+there was nothing to reuse. It was torn down and rebuilt.
+
+**Register the page-invariant blocks as real platform components.** Navigation, footer, hero band,
+any strip that appears on more than one page. A header built as page elements is fine on one page
+and is five copies to maintain on five. Where the platform promotes an existing element in place,
+nothing has to be rebuilt to do this.
+
+**Then build a page shell from them and gate it once.** The shell is the components in page order
+with a single placeholder where the page's own content goes. A new page is then **one API call**
+that duplicates it, not a build — and it arrives with every shared block already correct and already
+measured. On the project that proved it, the shell delivered **five of seven blocks free** on three
+consecutive pages, byte-identical to the gated originals at all three widths.
+
+**What a page still does after duplicating:** replace the placeholder, set the instance's text
+props, and delete the blocks that page does not carry. That is the whole per-page chrome cost.
+
+**A component library page is recommended, not required.** A page that specimens every component and
+token is genuinely useful — bind its swatches and spacing bars to the variables themselves and it
+reads the token layer live instead of being a copy that drifts. But its value has never been
+separated from "build the components first", so it is practice, not a rule.
+
+**And the limit, because it is measured and it is counter-intuitive.** Reuse makes the **build**
+cheap and says nothing about the page. Across four timed conversions, **building was under a fifth
+of the time**; everything else was proving it right, and verification scales with **content**, not
+with how much was reused. One page took **four times another with more reuse**, not less. Do not
+quote a per-page figure from a component library.
+
 ## Layout contract — every section, no exceptions
 
 Four rules. They are not style preferences; each one is a defect that shipped and was sent back.
@@ -742,6 +805,31 @@ done. You cannot aim at any of that without measuring it.
 
 `stop` prints a warning for a run with no `row7` phase, no publish count or no recorded deviation,
 because a duration with no result attached is a number nobody can use.
+
+### Look for what exists before you build anything
+
+**Check the component set, the classes and the tokens first. If something is roughly 80–90 % of what
+you need, use it and add a modifier. Build new only when nothing matches.**
+
+This is cheap to check and expensive to skip, because the alternative is not "a bit of extra work" —
+it is a near-duplicate class that looks right, drifts from its twin, and is the exact proliferation
+the naming convention exists to prevent. On the page where this was done deliberately, **four of six
+content pieces came straight from the component set with value-only modifiers**; the two that were
+built new were genuinely absent. The page after it reused an entire page's shape and was the
+cheapest on the project.
+
+> **Reuse by adding a modifier. Never by editing the class you borrowed.**
+>
+> Pagination needed an 8px gap, and the quickest route was to change the row class it had borrowed —
+> a class two other sections also wore. It would have reflowed both, silently, with nothing in the
+> build to show it. It was reverted and pagination got its own wrapper, which is what it needed
+> anyway. **Check what else wears a class before changing it**; on most targets one query answers
+> that.
+
+**A reuse judgement can be wrong, and the gate is what catches it.** One hero was judged "reuse plus
+one property" and in fact needed a whole variant, a new colour token, two props and a rebind — six
+changes. That is not an argument against reuse; it is the reason the estimate goes in the record
+before the build, and the actual goes in beside it afterwards.
 
 **Gate: a section is not done until every row passes. No next section until it does.**
 
@@ -1098,6 +1186,46 @@ where you are writing files anyway, there is only one layer and this costs nothi
 **A successful create is not proof it played.** Verify behaviour on the *published* output, not on
 the API response — one platform accepted scroll interactions, listed them as present, and never
 emitted them. See `targets/<target>.md` before writing or pasting any snippet.
+
+### Behaviour debt accrues per page, so write it down per page
+
+Stages 0–5 produce a page that is correct and inert. **Every disclosure the design draws open is a
+behaviour you have not built**, and a static build hides that: an accordion drawn open looks
+finished and does nothing. On a five-page project this reached **accordions on three pages, a
+table-of-contents dropdown, an Expand All / Collapse All control, a navigation active item, a
+hamburger with no open state, input focus states and a table-row hover reveal** — none of it
+visible in any gate, because every one of them measured and rendered correctly in its resting state.
+
+**So record each one in the project `CLAUDE.md` as it is deferred, naming the page.** A deviation
+table row saying *"interactive — built static, Stage 6"* is the only thing standing between a
+deferred behaviour and a forgotten one.
+
+### What forces a behaviour rather than a style
+
+Three things, and recognising them early saves building the wrong thing twice:
+
+- **It needs a descendant selector the platform cannot write.** A child whose appearance depends on
+  an ancestor's state. Where the colour can be inherited, do that instead and the behaviour becomes
+  pure CSS; where it cannot, it is script.
+- **It changes geometry, not just paint.** A pure `opacity` or colour change on hover is CSS and
+  covers every variant for one declaration. A hover that changes layout is a distinct state and
+  wants a class.
+- **It depends on something outside the component** — the current URL, a scroll position, which
+  sibling is open. A property cannot change a class and a variant keys on a class name, so "which
+  nav item is active" is script on most targets, not configuration.
+
+### Build the resting state the design draws, and say which state it is
+
+A frame showing every accordion open is a **state**, not a layout. Build that state, gate against
+it, and record that the frame was drawn open — otherwise the next person reads the static build as
+the finished behaviour. Where a frame exists for both states, gate both.
+
+### Verify on the published page, at the right width
+
+The standing rule above, with the two failure modes that motivate it: a platform that accepts and
+silently drops the interaction, and a behaviour that works at one width because the element it
+targets is only present at that width. **Check the behaviour at every gated width**, not just the
+one you built it at.
 
 ## Stage 7 — Fidelity pass, and flow the findings back
 

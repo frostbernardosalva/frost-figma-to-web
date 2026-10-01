@@ -233,6 +233,31 @@ modifier scoped to `["mt_badge"]` will not attach to an element wearing `mt_badg
 Read the element's `styleNames` first and pass the whole chain. The order matters too: it is the
 chain, not a set.
 
+## Components, and the page shell that makes page two cheap
+
+**Promote, do not rebuild.** `transform_element_to_component` turns an existing, already-gated
+element into a component in place. Nothing is reconstructed, and re-measuring after promotion
+returned figures identical to the pre-component ones at all three widths — which is the check worth
+running, because it is the one that would catch a promotion that quietly re-laid-out its contents.
+
+**Then make a shell page** holding the component instances in page order with one placeholder
+section. `create_page` takes `duplicateOf`, so a new page is one call and arrives with every shared
+block correct and gated. **Element ids are preserved through duplication**, scoped to the new page,
+so the same ids address the instances on every page made from the shell — which makes setting props
+across several new pages a batch rather than a hunt.
+
+**What a prop can and cannot do:**
+
+- **A text prop needs a default before anything binds to it.** Binding without one *empties the
+  element*, and it still publishes, still renders, and still looks like a component — only the
+  measurement catches it.
+- **A boolean bound to visibility** is the right tool for a block that some pages drop. It is one
+  prop and no extra style scope, where a variant would carry a whole scope for a show/hide.
+- **A prop cannot change a class**, and a variant keys on a class name rather than an element, so
+  "which nav item is active" is not expressible as either. That is Stage 6 script.
+- **Slots accept component instances only, never markup.** Where a page needs to wrap something else
+  in a shared band, it uses the band's *classes* directly rather than the component.
+
 ## Component variants enlist an element only via its FIRST class
 
 `set_variant_styles` publishes exactly the rule you ask for:
