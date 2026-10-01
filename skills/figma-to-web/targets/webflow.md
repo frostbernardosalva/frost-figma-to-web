@@ -50,9 +50,12 @@ Colour variables accept `hsla()` and `rgba()`, not just hex.
 - **No shadow variable type.** Shadows ship as global classes.
 - **Breakpoints are fixed** — `main` / `medium` ≤991 / `small` ≤767 / `tiny` ≤479 — and **cannot be
   variables**. A design frame at 480px maps to both `small` and `tiny`, so decide which one owns it.
-- **No API write path for page custom code.** `update_page_settings` covers only SEO, Open Graph,
-  slug and JSON-LD. Page-level snippets must go into section-level HTML Embeds instead, or be
-  pasted by hand in the Designer.
+- ~~**No API write path for page custom code.**~~ **Corrected 2026-10-01 — there is one.**
+  `data_scripts_tool` carries `set_site_freeform_code` and `set_page_freeform_code`, both of which
+  write and read back byte-correct. The limitation is real but belongs to a *different* call:
+  `update_page_settings` covers only SEO, Open Graph, slug and JSON-LD. A whole behaviour layer was
+  written and published through the scripts tool without pasting anything by hand. See
+  **Custom code in Webflow** below before using it — a publish can leave more than one copy.
 - **No `delete_page`.** `data_pages_tool` has create, update and branch actions only. A page can be
   emptied via `remove_element`, but removing the page entry itself is a Designer action.
 - **`draft: true` is silently dropped.** `bulk_update_pages` accepts it, returns 200, advances
@@ -396,10 +399,22 @@ prefill. Each rule below traces to a defect that shipped.
 refuse you, no paste box to truncate your script, and no second writer to clobber it — see
 `targets/html.md`.
 
-For behaviour Webflow cannot express: accordions, carousels, scroll-triggered animation, form
-prefill. Each rule below traces to a defect that shipped.
+### Custom code HAS an API write path — use it, then count the copies
 
-### Standing rule: anything the API cannot write goes in the repo as a paste
+**`data_scripts_tool` writes custom code.** `set_site_freeform_code` and `set_page_freeform_code`
+both store and read back byte-correct, and `get_*` reads the existing block. A complete behaviour
+layer — accordions, a dropdown, an expand-all control, a hover reveal across five pages — was
+written, published and verified this way with **nothing pasted by hand**. Read the existing block
+first and merge: these calls replace the whole field, so a blind write destroys what is already
+there.
+
+**The mirror rule still stands, and matters more now, not less.** Code that lives only in a Webflow
+settings box exists nowhere else. Keep the complete paste — including its `<script>` / `<style>`
+tags — in the project's `custom-code/` folder with a header comment naming where it goes, and diff
+the published page against that mirror after every push. On one project the page-level CSS for
+three pages existed *only* inside Webflow until the behaviour pass went looking for it.
+
+### Standing rule: anything the API genuinely cannot write goes in the repo as a paste
 
 **When a Webflow API call refuses something, do not work around it by changing the design
 decision.** Write the thing as a complete, paste-ready file in the project's `custom-code/`
@@ -435,8 +450,10 @@ The API refuses more than it documents. Known so far:
   `inset 0 -1px 0 0 var(--token)` is accepted, and the style reads back with `box-shadow` bound to
   the variable — but the geometry is gone and the published page computes `box-shadow: none`. The
   API keeps the colour and discards the rest. Verified on a live build.
-- **No write path for page custom code** at all — `update_page_settings` covers SEO, Open Graph,
-  slug and JSON-LD only, and its `draft` flag is silently dropped.
+- ~~**No write path for page custom code** at all~~ — **wrong, corrected 2026-10-01.** That is true
+  of `update_page_settings`, which covers SEO, Open Graph, slug and JSON-LD only and silently drops
+  its `draft` flag. Custom code has its own tool and it works: `set_site_freeform_code` and
+  `set_page_freeform_code` on `data_scripts_tool`.
 
 **Prefer page-level custom code over site-wide.** A root font-size rule pasted site-wide rescales
 every other page on that site, including design systems built earlier. Page settings scope it to
@@ -464,6 +481,36 @@ Before publishing:
 1. Compare the character count against the source file.
 2. Open the DevTools console on the published page. A syntax error shows immediately and names the
    token, which is far faster than inferring it from behaviour.
+
+### A publish can leave a SECOND, stale copy of your script in the page
+
+**Write your script so a second copy is harmless, because you cannot stop one arriving.** Site-level
+footer code was pushed through the API and read back byte-correct. The published page then carried
+it **twice** — once reformatted inside a `w-embed w-script` div mid-body, once near `</body>`. A
+later publish left a copy of the **previous version** of the script beside the current one, on one
+page out of five. `query_elements` finds no embed element and the page's own custom-code slots are
+empty, so neither copy is visible or deletable in the Designer. Republishing converged it to one.
+
+This is the `box-shadow` / breakpoint-write family again: **stored correctly, published wrong, fixed
+by re-issuing.**
+
+**Why it is worse than a normal duplicate.** Two copies of a toggle means every click runs two
+handlers and the second undoes the first, so the symptom is *"the accordion does nothing"* —
+identical to a script that never loaded, and it sends you hunting the wrong bug.
+
+Two defences, both one line:
+
+```js
+if (window.__myNamespace) return;   // a second copy no-ops
+window.__myNamespace = 1;
+```
+
+and, because the first copy can land **mid-body**, never depend on parse position — defer to
+`DOMContentLoaded` rather than assuming the markup above the script is all there is.
+
+**Then count.** After publishing, fetch the page and count occurrences of a token from your script.
+`grep -c` counts *lines*, and one of the copies is reformatted — count occurrences, not lines, or
+the check silently passes.
 
 ### Combo classes can bake in `display`
 

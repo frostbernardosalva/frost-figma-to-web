@@ -57,6 +57,10 @@ The distinction matters because scars do not announce themselves. "Never build a
 | Findings are a numbered file, opened at Stage 0 and added to until the build ends | `SKILL.md` Stage 0 | A gap in a sequence is visible where a missing paragraph is not |
 | Every finding gets a disposition before the project closes | `SKILL.md` Stage 7 | A finding that stays in the project is a lesson the next project pays for again |
 | A step with no artifact is a step that gets skipped | `SKILL.md` Stage 7 · `../../mistakes.md` | Nothing about it is platform-specific. The omission has to leave a visible hole, or a deadline removes it |
+| Behaviour moves the meaning of "first" — name the active item, never count it | `SKILL.md` Stage 5 | A positional selector is a CSS fact. Any target where a static build encodes "which one is active" as a position has the same trap the moment the block becomes interactive |
+| A behaviour can be blocked by its **data**, not by the platform | `SKILL.md` Stage 6 | Links with no destination defeat a URL-matching script on every target. Check that the thing a script would read exists before costing the script |
+| Adding behaviour must not move the resting state, and that is testable | `SKILL.md` Stage 6 | A page gated with its disclosures open is gated on that render anywhere. Write no style until someone acts, then measure before and after and expect zero |
+| Re-derive the backlog from the artifact, not from the last backlog | `SKILL.md` Stage 6 | A list of outstanding work goes stale on every target. The built output is the only thing that is actually there |
 
 ## Scars — Webflow only
 
@@ -93,6 +97,9 @@ The distinction matters because scars do not announce themselves. "Never build a
 | Removing an element leaves its classes behind, and the rebuild appends `-1` | **Nothing.** Deleting a rule deletes it |
 | The builder will not place a freshly created asset in an `<img>`; it skips the element silently | **Nothing.** You write the `<img>` |
 | A text input cannot exist outside a form | **Nothing.** You write the markup |
+| Custom code is written through `data_scripts_tool`, not `update_page_settings` — and the block must be read and merged, because the call replaces the whole field | **Nothing.** The file is the file |
+| A publish can leave a second, or stale, copy of a script in the page; guard it with a flag and never depend on parse position | **Nothing.** A script appears once, where you put it |
+| Count script copies by **occurrence**, not by line — the platform reformats one of them | **Nothing.** There is one copy and you wrote its formatting |
 
 ## Mixed — split, do not move whole
 
@@ -109,11 +116,12 @@ The distinction matters because scars do not announce themselves. "Never build a
 
 ## Count
 
-**39 truths · 31 scars · 6 mixed.**
+**43 truths · 34 scars · 6 mixed.**
 
-*Corrected 30 Sep 2026.* The previous figure read 33 · 26 · 5 against 32 · 25 · 5 rows — off
-by one on two of the three tables, and wrong from before this edit. Counted from the tables
-rather than carried forward, which is the only way it stays true. The scars are almost entirely in `references/webflow-mcp.md`
+*Updated 1 Oct 2026* — the Stage 6 behaviour run added four truths and three scars. Counted from
+the tables again rather than added to the previous figure, which is the only way it stays true;
+the count before that, 33 · 26 · 5 against 32 · 25 · 5 rows, was off by one on two of the three
+tables and had been wrong since before it was written down. The scars are almost entirely in `references/webflow-mcp.md`
 (185 lines, 95% Webflow — only its 5-line "Figma read tools" section is portable) and
 `references/custom-code.md` (86 lines, of which 2 sections are truths).
 

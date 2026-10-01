@@ -941,6 +941,27 @@ published, and the only symptom was in the render. Prefer `:first-of-type` when 
 the failure is silent in both directions, since a rule can stop matching or start matching the
 wrong node.
 
+**And behaviour moves the meaning of "first" without moving a single node.** A static build is
+allowed to encode *which* item is active as a **position** — the active section is the first link,
+so `:first-of-type` colours it and, on mobile, hides it from the panel because the trigger already
+shows it. Both rules are correct, match the frame, and pass every gate. They break the instant the
+block becomes interactive: pick the fifth entry and the script hides the fifth while the CSS still
+hides the first, so the panel shows one fewer than it should and the chosen entry never takes the
+active colour. Neither failure exists at rest, and **rest is the only state a gate or a screenshot
+ever sees**.
+
+> **Before adding behaviour to a block, grep its CSS for positional selectors.** Every
+> `:first-*`, `:last-*` and `:nth-*` aimed at that block is an assumption the behaviour is about to
+> invalidate. Replace them with a **named** state the behaviour owns — a data attribute it sets on
+> every candidate — and keep the positional rule only as the no-script fallback, where position is
+> still correct:
+>
+> ```css
+> .toc .link[data-active="true"],
+> .toc .link:not([data-active]):first-of-type { color: … }
+> ```
+
+
 #### Count the elements before you measure them
 
 A gate built on `querySelector` reads the **first** match and is blind to duplicates. On a real
@@ -1187,6 +1208,12 @@ where you are writing files anyway, there is only one layer and this costs nothi
 the API response — one platform accepted scroll interactions, listed them as present, and never
 emitted them. See `targets/<target>.md` before writing or pasting any snippet.
 
+**Run once, on five pages, 2026-10-01 — this stage is no longer theory.** Five of eight deferred
+behaviours were built in **49 minutes total** across five live pages, against conversions that cost
+between 20 minutes and 1h42m *each*. Behaviour is cheap next to conversion; the expensive part was
+proving the resting state had not moved. Two of the three not built were blocked **by the design or
+the data, not by the platform**. Everything below comes from that run.
+
 ### Behaviour debt accrues per page, so write it down per page
 
 Stages 0–5 produce a page that is correct and inert. **Every disclosure the design draws open is a
@@ -1199,6 +1226,13 @@ visible in any gate, because every one of them measured and rendered correctly i
 **So record each one in the project `CLAUDE.md` as it is deferred, naming the page.** A deviation
 table row saying *"interactive — built static, Stage 6"* is the only thing standing between a
 deferred behaviour and a forgotten one.
+
+**And re-derive that list from the artifact before working it.** On the run above the written
+backlog had seven items and the build had eight: the footer's six collapsible groups were missing
+from it, though they had been recorded as a finding a week earlier and sat on **every page** via the
+page shell — the largest item in the pass by page count. A backlog is a snapshot that stops being
+true the moment anything ships. The published markup is what is actually there, so **read the
+markup, then reconcile the backlog against it**, never the other way round.
 
 ### What forces a behaviour rather than a style
 
@@ -1214,11 +1248,38 @@ Three things, and recognising them early saves building the wrong thing twice:
   sibling is open. A property cannot change a class and a variant keys on a class name, so "which
   nav item is active" is script on most targets, not configuration.
 
+### A behaviour can be blocked by its data, which is not the same as hard
+
+*"Wire the navigation's active item — a few lines matching the URL"* sat on a backlog for weeks. It
+is not a few lines; it is **not buildable at all**, because every navigation link on every page is
+`href="#"` and the destination pages do not exist yet. A URL-matching script written then would have
+matched nothing, forever, while *looking* installed — the worst kind of done.
+
+- **Check that the thing a script would read actually exists before costing the script.** That
+  blocker was in the markup, visible in ten seconds, and nobody had looked.
+- **Say which blocked items are also currently harmless.** The hardcoded active item turned out to
+  be *correct* on the two pages where it showed and *suppressed by a theme* on the other three.
+  Ranking it as broken would have spent a day fixing nothing. It becomes a real defect on the first
+  page of a kind that does not exist yet — and that is exactly how to write it down.
+
 ### Build the resting state the design draws, and say which state it is
 
 A frame showing every accordion open is a **state**, not a layout. Build that state, gate against
 it, and record that the frame was drawn open — otherwise the next person reads the static build as
 the finished behaviour. Where a frame exists for both states, gate both.
+
+**Adding behaviour must not move the resting state, and that is testable.** A page gated with every
+disclosure open is gated on *that* render, so the behaviour layer must write no style at all until
+someone acts: bind the handlers, set the aria, touch no `display`. Prove it rather than assert it —
+measure the same pages at the same widths before and after and expect **zero**. On the run above,
+**thirteen of fifteen page/width cells came back at +0.00**, and a probe confirmed not one inline
+`display` at rest.
+
+**When a resting state genuinely must change, report both states.** One block there had to ship
+closed: a dropdown its frame draws open, because that frame is showing the contents rather than the
+resting state. The honest record is both numbers — the open state still matches the gate it was
+measured against, and the shipped closed state is 409px shorter *with no frame to compare it to*.
+Re-scoring the page against a state it no longer rests in would be marking your own homework.
 
 ### Verify on the published page, at the right width
 

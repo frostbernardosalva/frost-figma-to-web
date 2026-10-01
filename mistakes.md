@@ -81,6 +81,7 @@ defect present. This is the most dangerous shape, because it produces a confiden
 | **"Row 7 was run" — on three crops of one component.** A 12-item content page was screenshotted at its accordion lists, compared, and reported as gated. The **navbar was the wrong theme, the hero band was still the wrong colour with the new ink already on it, and the footer breadcrumb still read the previous page's text**. A hero crop had been taken and never opened. The user saw all three in seconds | Mynt | **A crop of one component is not row 7 for a page.** Open a whole-page render at every width and name each page-level block — nav, hero, footer — against its own design node. A theme changes no dimensions, so no numeric row can ever catch it | `SKILL.md` "Row 7 is the one that gets faked" |
 | **The page total passed because the errors cancelled.** A 12-item content page measured **+0.22 % — inside a tolerance pre-registered before the build.** Three items were a line too long, one was three lines too short, and the sums nearly annulled each other. Fixing the real defects made the headline number **worse** before it got better | Mynt | On a content-driven page a page total is a weak gate. **Pull per-item targets out of the frame metadata and compare item by item** — one call per width, and every deviation then resolves to a whole number of lines | `SKILL.md` Stage 5 |
 | **No row checks which font face resolved.** `font-weight: 400` was requested everywhere and only 500 and 700 were loaded, so every "Regular" run rendered Medium — on both builds. Every recorded measurement came from a Medium-rendered page | HTML target | Assert the resolved face, not that the family is available. `document.fonts.check()` answers the wrong question | — |
+| **A duplicate-detection check that counted lines.** A published page carried the behaviour script **twice**, which would have made every click fire two handlers and cancel itself. `grep -c` was used to count the copies and reported **1**, because `grep -c` counts matching *lines* and the platform had reformatted one copy onto different line breaks. The check that existed to find duplicates was blind to the duplicate in front of it | Mynt | Count **occurrences**, not lines — `grep -o … \| wc -l` — and pick a token that survives reformatting. Then read where each copy sits, because two copies of a toggle present as *"nothing happens"*, identical to a script that never loaded | `targets/webflow.md` |
 
 ---
 
@@ -115,6 +116,7 @@ reading was also wrong.
 | One `500` response cached as a permanent capability claim: `remove_style` was recorded as broken and written into the shared reference. Re-tested: **212 classes removed, zero failures** | Golden Bull | Re-test before recording a capability, and date the record | `targets/webflow.md` `## Cleanup` |
 | A platform rule generalised from one property name — *"`row-gap` rejects a length variable"* — was **reversed by finding 7 in its own list**. The legacy aliases accept variables and Webflow's own classes use them | Frost landing | Test the alias before writing the rule | `targets/webflow.md` |
 | The mobile frame is **480**; real devices report **390–428**. Every mobile number in the table describes a width no device has, and the build and the checks inherited the same wrong reference, so their agreement proved nothing | Golden Bull | Sample the band the product ships to, not only the drawn widths | `SKILL.md` "Check the ranges" |
+| **A platform mechanism written up from a single observation.** Seeing the script twice, the cause was recorded — in the shipped file's own comment — as a specific, confident mechanism: *"the platform emits site footer code twice, once as an embed mid-body and once at body end."* The next publish did not reproduce it. Four pages had one copy; the fifth had the current script beside a **stale copy of the previous version**. The defence was right either way; the explanation was invented | Mynt | **Write what you observed, not the mechanism you inferred from one publish.** A second publish is the cheapest replication available and it changed the finding. A guard that holds under several explanations is worth more than a guard aimed at one | `targets/webflow.md` |
 
 ---
 
@@ -131,6 +133,7 @@ was not the thing under test.
 | Scroll interactions were created, read back, and listed as visible on the page. They never fired: the site publishes **zero `data-w-id`**. **Everything a check could reach said pass** | Frost landing | Grep the published page, not the create response | `targets/webflow.md` · `SKILL.md` Stage 6 |
 | `update_page_settings` returns **200**, advances `lastUpdated`, and changes nothing | Golden Bull | A success response is not a write. Re-query the field | `targets/webflow.md` |
 | A style write was accepted, stored, returned by the read-back, and **absent from the published CSS**. Reproduced twice in one session | Mynt | **API read-back is not verification on this target** | `targets/webflow.md` · `SKILL.md` |
+| **The backlog was the stale copy.** A behaviour pass was scoped from a written backlog of seven items. The build had eight: six collapsible footer groups, on **every page** via the page shell — the largest item in the pass by page count — had been recorded as a finding a week earlier and never reached the list. Found only by reading the published markup | Mynt | **Re-derive the backlog from the artifact before working it.** A list of outstanding work is a snapshot that stops being true the moment anything ships; the published markup is what is actually there | `SKILL.md` Stage 6 |
 
 ---
 
@@ -213,6 +216,13 @@ methodological:
 | A value seen only through a variant is not the base value | `targets/webflow.md` |
 | Reuse with a modifier; never edit the borrowed class | `SKILL.md` Stage 5 |
 | Components, the page shell, and the order they come in | `SKILL.md` Stage 4 |
+| Custom code **does** have an API write path — a false capability claim, corrected | `targets/webflow.md` |
+| A publish can leave a second, or stale, copy of a script in the page; guard the script | `targets/webflow.md` |
+| Behaviour moves the meaning of "first" — name the active item, never count it | `SKILL.md` |
+| A behaviour can be blocked by its **data**, not the platform | `SKILL.md` Stage 6 |
+| Adding behaviour must not move the resting state, and that is testable | `SKILL.md` Stage 6 |
+| **The backlog was the stale copy** — the row above | this file, shape 5 |
+| **A mechanism inferred from one publish** — the row above | this file, shape 4 |
 
 ## What this file is not
 
